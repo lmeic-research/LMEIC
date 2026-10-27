@@ -25,7 +25,7 @@ authors:
   - family-names: Shi
     given-names: Senyou
 license: MIT
-repository-code: "https://github.com/xingyun-yan/LMEIC"
+repository-code: "https://github.com/lmeic-research/LMEIC"
 version: "1.0.0"
 date-released: "2026-10-27"
 preferred-citation:
