@@ -1,0 +1,73 @@
+# D1 (LLM descriptor) extraction for revision 1.
+# Prompt, one-shot example and field schema are imported unchanged from
+# email3r/code/framework/features/extract_d1_v2.py; only the endpoint and the
+# pinned model snapshot differ (DJ D044).
+
+source_run_id: run_20260526_123858
+output_prefix: rev1_d1_gpt4o_20241120
+
+api:
+  env_file: .env                     # relative to repo_root
+  profile: openrouter                # proxy gpt-4o quota exhausted 2026-10-22 21:00
+  temperature: 0
+  max_tokens: 400
+  max_retries: 12                    # OpenRouter OpenAI endpoint throttles by tokens per minute
+  request_timeout_s: 120
+
+api_profiles:
+  # OpenRouter's OpenAI endpoint for this snapshot returned HTTP 429 for most
+  # requests around 19:20 on 2026-10-22; 12 concurrent requests succeeded at 21:05.
+  openrouter:
+    base_url_env: OPENROUTER_BASE_URL
+    key_env: OPENROUTER_API_KEY
+    model: openai/gpt-4o-2024-11-20
+    provider_order: [OpenAI]
+    allow_fallbacks: false
+    max_concurrent: 8
+  openrouter_slow:                   # completion passes: concurrency 8-16 hit token-rate 429s
+    base_url_env: OPENROUTER_BASE_URL
+    key_env: OPENROUTER_API_KEY
+    model: openai/gpt-4o-2024-11-20
+    provider_order: [OpenAI]
+    allow_fallbacks: false
+    max_concurrent: 3
+  proxy:
+    base_url_env: PROXY_BASE_URL
+    key_env: PROXY_API_KEY
+    model: gpt-4o-2024-11-20
+    provider_order: null
+    allow_fallbacks: null
+    max_concurrent: 16
+
+sets:
+  test_drift:
+    kind: sampled                    # sampled_all rows whose message_id is in the EMAIL-3R v1.0 split; id = row position
+    relpath: phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
+    split: test
+    id_field: row_idx
+  test_prompt_subset:                # E5 prompt sensitivity: simple random sample of the test split
+    kind: sampled
+    relpath: phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
+    split: test
+    id_field: row_idx
+    subset_n: 1000
+    subset_seed: 20261022
+  cross_role:
+    kind: jsonl
+    path: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/cross_role_instances.jsonl.gz
+    id_field: instance_id
+  fresh_holdout:
+    kind: jsonl
+    path: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/fresh_holdout_instances.jsonl.gz
+    id_field: instance_id
+  e1b:
+    kind: jsonl
+    path: datasets/email3r_runs/rev1_e1b_manager_20261022_194017/e1b_instances.jsonl.gz
+    id_field: instance_id
+  e12_enron:                         # run through e12_enron.run_api (Enron role descriptions)
+    kind: jsonl
+    path: datasets/email3r_runs/rev1_e12_enron_20261022_235509/instances.jsonl.gz
+    id_field: instance_id
+
+drift:
+  v1_d1_relpath: tide_features_v2/d1_features_v2.jsonl

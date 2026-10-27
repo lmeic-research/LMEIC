@@ -1,0 +1,33 @@
+# E11: open-weight LLM baselines on the EMAIL-3R test split (revision 1).
+# Version: v1 | Date: 2026-10-23
+#
+# zero_shot: the prompt template and role descriptions of the v1.0 direct-LLM baselines
+#   (experiments/baselines/run_wave2_llm_zs.py, B2-B6), served locally with vLLM; decoding is
+#   constrained to the three labels.
+# lora: a sequence-classification head on an instruction-tuned LLM, LoRA-tuned on the
+#   development pool (train+val); the input carries the recipient-role description.
+
+output_prefix: rev1_e11_llm_baselines
+
+zero_shot:
+  models: [qwen25_7b, qwen3_8b]          # keys of rev1_d1_local.yaml: models
+  max_tokens: 4
+  temperature: 0
+  seed: 42
+
+lora:
+  model_name: Qwen/Qwen2.5-7B-Instruct
+  max_len: 512
+  batch_size: 8
+  grad_accum: 2
+  lr: 1.0e-4
+  epochs: 2
+  warmup_ratio: 0.05
+  weight_decay: 0.0
+  lora_r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  gradient_checkpointing: true
+  fold_seed: 42                           # oof mode: thread-grouped folds as in coreader_bank
+  seed: 42

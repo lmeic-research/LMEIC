@@ -1,0 +1,6 @@
+# Organisation-specific identifiers used by the relational (D2) features.
+# The EMAIL-3R values are confidential and are not distributed. To run the D2/D3
+# pipeline on your own corpus, copy this file to partner_identifiers.yaml and list the
+# e-mail domains that count as internal to the organisation.
+internal_domains:
+  - example.org

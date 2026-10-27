@@ -1,0 +1,457 @@
+# Revision-1 reference rebuild: leakage fixes and protocol changes, one at a time.
+# Version: v1 | Date: 2026-10-22
+
+source_run_id: run_20260526_123858
+output_prefix: rev1_reference
+
+features:
+  d1_v2_relpath: tide_features_v2/d1_features_v2.jsonl
+  d2d3_v2_relpath: tide_features_v2/d2d3_features_v2.parquet
+  d2d3_v3_path: datasets/email3r_runs/rev1_features_d2d3_v3_20261022_190835/d2d3_features_v3.parquet
+  context_rich_dir: datasets/email3r_runs/rev1_context_rich_20261022_232836   # E7 (d2x_*, d3x_*)
+
+# v1.0 artefacts used for the reproduction check and for reusing test-time co-reader scores.
+v1_artefacts:
+  tide_v9_config: phase4_experiments/tide/TIDE_v9_d1v2/config.json
+  plm_probs: phase4_experiments/_models/plm_probs.parquet
+
+seeds: [42, 123, 456, 789, 2026]
+n_folds: 5
+optuna_trials: 60
+inner_es_fraction: 0.1
+
+# Protocols:
+#   v1_original  : StratifiedKFold over messages; LightGBM early stopping on the scored fold.
+#   grouped_clean: StratifiedGroupKFold over threads; LightGBM early stopping on an inner
+#                  thread-disjoint split of the training fold.
+coreader:
+  model_name: xlm-roberta-base
+  max_len: 256
+  batch_size: 16
+  lr: 2.0e-5
+  epochs: 4
+  seed: 42
+
+# E10 co-reader robustness: every candidate uses the same thread-grouped folds (fold seed 42)
+# for development-pool scores and a model fitted on the full development pool for test scores.
+coreader_bank:
+  fold_seed: 42
+  common: {max_len: 256, epochs: 4, bf16: true}
+  candidates:
+    xlmr_base:       {model_name: xlm-roberta-base, lr: 2.0e-5, batch_size: 16, seeds: [42, 123, 456, 789, 2026]}
+    xlmr_large:      {model_name: FacebookAI/xlm-roberta-large, lr: 1.0e-5, batch_size: 16, seeds: [42]}
+    mdeberta_v3_base: {model_name: microsoft/mdeberta-v3-base, lr: 2.0e-5, batch_size: 16, seeds: [42]}
+    bge_m3:          {model_name: BAAI/bge-m3, lr: 1.0e-5, batch_size: 16, seeds: [42]}
+    chinese_roberta: {model_name: hfl/chinese-roberta-wwm-ext, lr: 2.0e-5, batch_size: 16, seeds: [42]}
+
+# Each variant changes one factor relative to the previous row.
+external_sets:                       # instances outside EMAIL-3R scored by models fitted on train+val
+  d1_dir: datasets/email3r_runs/rev1_d1_gpt4o_20241120_20261022_192314
+  d2d3_dir: datasets/email3r_runs/rev1_newset_features_d2d3_v3_20261022_194045
+  agent_dir: datasets/email3r_runs/rev1_agent_labels_20261022_192927
+  sets:
+    cross_role: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/cross_role_instances.jsonl.gz
+    fresh_holdout: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/fresh_holdout_instances.jsonl.gz
+    e1b: datasets/email3r_runs/rev1_e1b_manager_20261022_194017/e1b_instances.jsonl.gz
+
+analysis:
+  sampled_relpath: phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
+  published_predictions:             # v1.0 five-seed test predictions (relative to the source run)
+    v1_explicit: phase4_experiments/tide/TIDE_v9_d1v2/predictions.jsonl
+    v1_full: phase4_experiments/tide/TIDE_plm_fusion/predictions.jsonl
+    v1_B11: phase4_experiments/baselines/B11_d2d3_xgb/predictions.jsonl
+    v1_B12: phase4_experiments/ablation/b11b12_20260529_230823/B12_D1_only_xgb_final/predictions.jsonl
+    # v1.0 main-table baselines (seed 42 only; same thread-disjoint split), for the revised main table
+    v1_B00_majority: phase4_experiments/baselines/B00_majority/predictions.jsonl
+    v1_B01_tfidf_lr: phase4_experiments/baselines/B01_tfidf_lr/predictions.jsonl
+    v1_B02_gpt4o_zs: phase4_experiments/baselines/B02_gpt4o_zs/predictions.jsonl
+    v1_B04_gpt55_zs: phase4_experiments/baselines/B04_gpt55_zs/predictions.jsonl
+    v1_B06_deepseek_v4pro_zs: phase4_experiments/baselines/B06_deepseek_v4pro_zs/predictions.jsonl
+    v1_B07_gpt55_fewshot: phase4_experiments/baselines/B07_gpt55_fewshot/predictions.jsonl
+    v1_B08_gpt55_context_enriched: phase4_experiments/baselines/B08_gpt55_context_enriched/predictions.jsonl
+    v1_B09_xlmr_ft: phase4_experiments/baselines/B09_xlmr_ft/predictions.jsonl
+    v1_B10_xlmr_cls_xgb: phase4_experiments/baselines/B10_xlmr_cls_xgb/predictions.jsonl
+  extra_predictions:                 # single-seed systems outside this run (relative to repo_root)
+    E11_lora_qwen25_role: datasets/email3r_runs/rev1_e11_llm_baselines_20261023/qwen25_7b_lora_role_s42/test_probs.parquet
+    E11_zs_qwen25_7b: datasets/email3r_runs/rev1_e11_llm_baselines_20261023/zero_shot_email3r_qwen25_7b.jsonl
+    E11_zs_qwen3_8b: datasets/email3r_runs/rev1_e11_llm_baselines_20261023/zero_shot_email3r_qwen3_8b.jsonl
+  comparisons:                       # [a, b]: delta = macro-F1(a) - macro-F1(b)
+    - [R3_v3_grouped_full, E11_lora_qwen25_role]
+    - [R2_v3_grouped_explicit, E11_lora_qwen25_role]
+    - [R2_v3_grouped_explicit, E11_zs_qwen3_8b]
+    - [R0_v2_original_storedparams, v1_explicit]
+    - [R1_v3_original, R0_v2_original_storedparams]
+    - [R2_v3_grouped_explicit, R1_v3_original]
+    - [R2_v3_grouped_explicit, v1_explicit]
+    - [R3_v3_grouped_full, v1_full]
+    - [R3_v3_grouped_full, R2_v3_grouped_explicit]
+    - [R4_B11_v3_grouped, v1_B11]
+    - [R2_v3_grouped_explicit, R4_B11_v3_grouped]
+    - [R5_B12_grouped, v1_B12]
+    - [R2_v3_grouped_explicit, R5_B12_grouped]
+    - [R3_v3_grouped_full, R5_B12_grouped]
+    - [R2_v3_grouped_explicit, E9_explicit_minus_d2]
+    - [R2_v3_grouped_explicit, E9_explicit_minus_d3]
+    - [R2_v3_grouped_explicit, E9_explicit_minus_d2d3]
+    - [R2_v3_grouped_explicit, E9_explicit_no_context]
+    - [E9_explicit_minus_d2d3, E9_explicit_no_context]
+    - [R2_v3_grouped_explicit, E9_explicit_minus_d1]
+    - [R2_v3_grouped_explicit, E9_explicit_minus_rolecond]
+    - [R2_v3_grouped_explicit, E9_explicit_minus_text]
+    - [R2_v3_grouped_explicit, E9_explicit_minus_interactions]
+    - [R2_v3_grouped_explicit, E9_explicit_xgb_only]
+    - [R2_v3_grouped_explicit, E9_explicit_d1_only]
+    - [R3_v3_grouped_full, E9_full_minus_d2]
+    - [R3_v3_grouped_full, E9_full_minus_d3]
+    - [R3_v3_grouped_full, E9_full_minus_d2d3]
+    - [R3_v3_grouped_full, E9_full_no_context]
+    - [E4_qwen3_8b_explicit_R2params, R2_v3_grouped_explicit]
+    - [E4_qwen3_8b_explicit_tuned, R2_v3_grouped_explicit]
+    - [E4_qwen3_8b_full_R3params, R3_v3_grouped_full]
+    - [E4_qwen25_7b_explicit_R2params, R2_v3_grouped_explicit]
+    - [E4_qwen25_7b_full_R3params, R3_v3_grouped_full]
+    - [E6_qwen3_masked_explicit_R2params, E4_qwen3_8b_explicit_R2params]
+    - [E6_qwen3_masked_full_R3params, E4_qwen3_8b_full_R3params]
+    - [E13_distilled_explicit_R2params, R2_v3_grouped_explicit]
+    - [E13_distilled_full_R3params, R3_v3_grouped_full]
+    - [E7_explicit_rich_R2params, R2_v3_grouped_explicit]
+    - [E7_explicit_rich_noprior_R2params, R2_v3_grouped_explicit]
+    - [E7_explicit_plus_d2x_R2params, R2_v3_grouped_explicit]
+    - [E7_explicit_plus_d3x_R2params, R2_v3_grouped_explicit]
+    - [E7_explicit_rich_R2params, E9_explicit_minus_d2d3]
+    - [R2_v3_grouped_explicit, E7_explicit_d2meta]
+    - [R2_v3_grouped_explicit, E7_explicit_d2hist]
+    - [E7_context_rich_xgb, R4_B11_v3_grouped]
+    - [E7_full_rich_R3params, R3_v3_grouped_full]
+    - [E7_explicit_rich_tuned, R2_v3_grouped_explicit]
+    # E14 multi-extractor D1 (all four variants reported; none selected on test)
+    - [E14_qwen3_plus_gpt4o_explicit_R2params, R2_v3_grouped_explicit]
+    - [E14_qwen25_plus_gpt4o_explicit_R2params, R2_v3_grouped_explicit]
+    - [E14_both_extractors_explicit_R2params, R2_v3_grouped_explicit]
+    - [E14_both_extractors_full_R3params, R3_v3_grouped_full]
+    - [E14_both_extractors_explicit_R2params, E11_lora_qwen25_role]
+    - [E14_both_extractors_full_R3params, E11_lora_qwen25_role]
+    # revised main table: R3 (full) and R2 (explicit) against every main-text baseline
+    - [R3_v3_grouped_full, v1_B00_majority]
+    - [R3_v3_grouped_full, v1_B01_tfidf_lr]
+    - [R3_v3_grouped_full, v1_B02_gpt4o_zs]
+    - [R3_v3_grouped_full, v1_B04_gpt55_zs]
+    - [R3_v3_grouped_full, v1_B06_deepseek_v4pro_zs]
+    - [R3_v3_grouped_full, v1_B07_gpt55_fewshot]
+    - [R3_v3_grouped_full, v1_B08_gpt55_context_enriched]
+    - [R3_v3_grouped_full, v1_B09_xlmr_ft]
+    - [R3_v3_grouped_full, v1_B10_xlmr_cls_xgb]
+    - [R3_v3_grouped_full, R4_B11_v3_grouped]
+    - [R3_v3_grouped_full, E11_zs_qwen25_7b]
+    - [R3_v3_grouped_full, E11_zs_qwen3_8b]
+    - [R2_v3_grouped_explicit, v1_B00_majority]
+    - [R2_v3_grouped_explicit, v1_B01_tfidf_lr]
+    - [R2_v3_grouped_explicit, v1_B02_gpt4o_zs]
+    - [R2_v3_grouped_explicit, v1_B04_gpt55_zs]
+    - [R2_v3_grouped_explicit, v1_B06_deepseek_v4pro_zs]
+    - [R2_v3_grouped_explicit, v1_B07_gpt55_fewshot]
+    - [R2_v3_grouped_explicit, v1_B08_gpt55_context_enriched]
+    - [R2_v3_grouped_explicit, v1_B09_xlmr_ft]
+    - [R2_v3_grouped_explicit, v1_B10_xlmr_cls_xgb]
+    - [R2_v3_grouped_explicit, E11_zs_qwen25_7b]
+  n_boot: 5000
+  boot_seed: 20261022
+
+variants:
+  - name: R0_v2_original_storedparams
+    d2d3: v2
+    protocol: v1_original
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
+    reuse_v1_params: true
+  - name: R1_v3_original
+    d2d3: v3
+    protocol: v1_original
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
+  - name: R2_v3_grouped_explicit
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
+  - name: R3_v3_grouped_full
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond, coreader]
+    arch: stacking
+  - name: R4_B11_v3_grouped
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d2, d3]
+    arch: xgb
+  # B12 (D1-only XGBoost) under the grouped protocol: the v1.0 fair rerun dropped the D1
+  # field role_relevance through the role-conditional prefix filter (19 instead of 20 columns).
+  - name: R5_B12_grouped
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1]
+    arch: xgb
+  # E4: open-weight local extractors replace GPT-4o descriptors for all 15K instances
+  # (same prompt and schema, JSON-schema-constrained decoding). Run with --only E4_.
+  - name: E4_qwen3_8b_explicit_R2params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
+    d1_file: datasets/email3r_runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
+    params_from: R2_v3_grouped_explicit
+  - name: E4_qwen3_8b_full_R3params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond, coreader]
+    arch: stacking
+    d1_file: datasets/email3r_runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
+    params_from: R3_v3_grouped_full
+  - name: E4_qwen3_8b_explicit_tuned
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
+    d1_file: datasets/email3r_runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
+  - name: E4_qwen25_7b_explicit_R2params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
+    d1_file: datasets/email3r_runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
+    params_from: R2_v3_grouped_explicit
+  - name: E4_qwen25_7b_full_R3params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond, coreader]
+    arch: stacking
+    d1_file: datasets/email3r_runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
+    params_from: R3_v3_grouped_full
+  # E6: Qwen3-8B descriptors extracted from strongly masked text (rev1_privacy_mask).
+  - name: E6_qwen3_masked_explicit_R2params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
+    d1_file: datasets/email3r_runs/rev1_d1_local_qwen3_8b_masked_20261023_004930/d1_all.jsonl
+    params_from: R2_v3_grouped_explicit
+  - name: E6_qwen3_masked_full_R3params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond, coreader]
+    arch: stacking
+    d1_file: datasets/email3r_runs/rev1_d1_local_qwen3_8b_masked_20261023_004930/d1_all.jsonl
+    params_from: R3_v3_grouped_full
+  # E13: descriptors from the XLM-R student distilled from the GPT-4o extractor (development
+  # rows: out-of-fold student predictions; test rows: student fitted on the development pool).
+  - name: E13_distilled_explicit_R2params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
+    d1_file: datasets/email3r_runs/rev1_e13_distill_20261023_002435/d1_all.jsonl
+    params_from: R2_v3_grouped_explicit
+  - name: E13_distilled_full_R3params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond, coreader]
+    arch: stacking
+    d1_file: datasets/email3r_runs/rev1_e13_distill_20261023_002435/d1_all.jsonl
+    params_from: R3_v3_grouped_full
+  # E9: domain ablation under the grouped protocol with the reference parameters held fixed
+  # (same convention as the v1.0 domain ablation). Interactions that involve a removed
+  # domain disappear with it; no_context also drops the role-conditional products, so no
+  # recipient information remains. Run with --only E9_.
+  - name: E9_explicit_minus_d2
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d3, text, interactions, role_cond]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E9_explicit_minus_d3
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, text, interactions, role_cond]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E9_explicit_minus_d2d3
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, text, interactions, role_cond]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E9_explicit_no_context
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, text, interactions]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E9_full_no_context
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, text, interactions, coreader]
+    arch: stacking
+    params_from: R3_v3_grouped_full
+  - name: E9_full_minus_d2d3
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, text, interactions, role_cond, coreader]
+    arch: stacking
+    params_from: R3_v3_grouped_full
+  - name: E9_full_minus_d2
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d3, text, interactions, role_cond, coreader]
+    arch: stacking
+    params_from: R3_v3_grouped_full
+  - name: E9_full_minus_d3
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, text, interactions, role_cond, coreader]
+    arch: stacking
+    params_from: R3_v3_grouped_full
+  - name: E9_explicit_minus_d1
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d2, d3, text, interactions, role_cond]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  # Component ablations for the revised ablation table (2026-10-27): R2 parameters, grouped protocol
+  - name: E9_explicit_minus_text
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, interactions, role_cond]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E9_explicit_minus_interactions
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, role_cond]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E9_explicit_xgb_only
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: xgb
+    params_from: R2_v3_grouped_explicit
+  - name: E9_explicit_minus_rolecond
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E9_explicit_d1_only
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E9_explicit_d2_only
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d2]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E9_explicit_d3_only
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d3]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  # E7: richer pre-t context (d2x: history, graph, thread semantics, label prior; d3x: role
+  # statement similarity, mined role n-grams) and the D2 metadata/history split. Run with --only E7_.
+  - name: E7_explicit_rich_R2params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, d2x, d3x, text, interactions, role_cond]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E7_explicit_rich_noprior_R2params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, d2x_noprior, d3x, text, interactions, role_cond]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E7_explicit_plus_d2x_R2params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, d2x, text, interactions, role_cond]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E7_explicit_plus_d3x_R2params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, d3x, text, interactions, role_cond]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E7_explicit_d2meta
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2meta, d3, text, interactions, role_cond]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E7_explicit_d2hist
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2hist, d3, text, interactions, role_cond]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  - name: E7_context_rich_xgb
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d2, d3, d2x, d3x]
+    arch: xgb
+    params_from: R4_B11_v3_grouped
+  - name: E7_full_rich_R3params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, d2x, d3x, text, interactions, role_cond, coreader]
+    arch: stacking
+    params_from: R3_v3_grouped_full
+  - name: E7_explicit_rich_tuned
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, d2x, d3x, text, interactions, role_cond]
+    arch: stacking
+
+  # E14: multi-extractor D1. The v1.0 D1 block (GPT-4o) is kept and one or two
+  # independently extracted descriptor blocks are concatenated, each with its own
+  # column prefix. Extractor errors are only partly correlated (GPT-4o vs Qwen3
+  # pairwise kappa ~0.65), so the extra blocks carry information that a single
+  # extractor cannot. Answers R1.6/R3.9 (not tied to one LLM) and R3.2 (same
+  # conclusion from non-panel extractors). Run with --only E14_.
+  - name: E14_qwen3_plus_gpt4o_explicit_R2params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
+    d1_extra:
+      - qwen3=datasets/email3r_runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
+    params_from: R2_v3_grouped_explicit
+  - name: E14_qwen25_plus_gpt4o_explicit_R2params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
+    d1_extra:
+      - qwen25=datasets/email3r_runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
+    params_from: R2_v3_grouped_explicit
+  - name: E14_both_extractors_explicit_R2params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
+    d1_extra:
+      - qwen3=datasets/email3r_runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
+      - qwen25=datasets/email3r_runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
+    params_from: R2_v3_grouped_explicit
+  - name: E14_both_extractors_full_R3params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond, coreader]
+    arch: stacking
+    d1_extra:
+      - qwen3=datasets/email3r_runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
+      - qwen25=datasets/email3r_runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
+    params_from: R3_v3_grouped_full

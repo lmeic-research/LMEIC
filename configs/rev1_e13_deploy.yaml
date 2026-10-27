@@ -1,0 +1,28 @@
+# E13: scalability and deployment (revision 1).
+# Version: v1 | Date: 2026-10-23
+
+output_prefix: rev1_e13
+
+distill:                                  # D1 extractor distillation into a multi-task encoder
+  model_name: xlm-roberta-base
+  sampled_relpath: phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
+  max_len: 256
+  batch_size: 16
+  lr: 3.0e-5
+  epochs: 4
+  fold_seed: 42
+  seed: 42
+
+temporal:
+  variant: R2_v3_grouped_explicit     # tuned parameters reused, not re-tuned per window
+  first_eval_month: "2025-09"
+  seeds: [42, 123, 456]
+  n_boot: 2000
+
+latency:
+  prices:
+    gpt4o_input_usd_per_mtok: 2.5         # gpt-4o-2024-11-20 input, USD per million tokens
+    gpt4o_output_usd_per_mtok: 10.0       # gpt-4o-2024-11-20 output, USD per million tokens
+    gpu_usd_per_hour: null                # rented single RTX 5090, USD per hour [to verify]; GPU-hours reported regardless
+    sources:
+      gpt4o: "OpenRouter /api/v1/models pricing for openai/gpt-4o-2024-11-20, retrieved 2026-10-23 (literature/pricing/openrouter_models_20261023.json)"

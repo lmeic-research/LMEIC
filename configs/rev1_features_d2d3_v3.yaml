@@ -1,0 +1,54 @@
+# D2/D3 feature extraction v3 (revision 1).
+# Version: v1 | Date: 2026-10-22
+# v3 = v2 with the thread-position feature replaced by a strictly pre-timestamp
+# thread-history count. All other features follow the v2 definitions.
+
+source_run_id: run_20260526_123858
+history_relpath: phase0_preprocessing/05_redacted/with_threads.jsonl.gz
+sampled_relpath: phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
+v2_features_relpath: tide_features_v2/d2d3_features_v2.parquet
+partner_identifiers: configs/private/partner_identifiers.yaml
+output_prefix: rev1_features_d2d3_v3
+
+carrier_domains:
+  - maersk.com
+  - msc.com
+  - cma-cgm.com
+  - cosco.com
+  - evergreen.com
+  - hapag-lloyd.com
+  - one-line.com
+  - yangming.com
+  - zim.com
+  - oocl.com
+  - hmm21.com
+  - pil.com.sg
+  - tslines.com
+  - irisl.net
+
+role_keywords:
+  Mgr: [contract, agreement, payment, invoice, amount, usd, eur, deadline, penalty, urgent,
+        complaint, claim, dispute, delay, damaged, lost, shortage, client, customer, partner,
+        vendor, agent, quote, quotation, price, cost, rate, charge, fee, profit, margin, budget,
+        approve, approval, authorize, decision, strategy, negotiate, negotiation, escalat,
+        priorit, critical, important, asap, immediately, follow.up]
+  CS: [booking, prealert, pre-alert, b/l, bill of lading, hbl, mbl, eta, etd, ata, atd, vessel,
+       voyage, container, tracking, status, update, shipment, cargo, freight, customs,
+       clearance, delivery, pickup, release, document, draft, amendment, correction, telex,
+       client, customer, consignee, shipper, notify, complaint, delay, problem, issue, help,
+       request]
+  Sch: [schedule, sailing, vessel, voyage, rotation, service, port, terminal, berth, eta, etd,
+        cut-off, cutoff, closing, deadline, space, slot, allocation, equipment, container,
+        feeder, transhipment, transit, direct, omit, skip, blank, cancel, delay, advance, week,
+        monthly, amendment, update, notice, arrangement, msc, cosco, evergreen, maersk, one,
+        hapag]
+
+# Feature groups for the availability split of the relational domain.
+groups:
+  d2_hist: [d2_sender_freq_30d, d2_sender_freq_90d, d2_sender_reply_rate, d2_thread_prior_count]
+  d2_meta: [d2_thread_depth, d2_is_reply, d2_to_count, d2_cc_count, d2_has_attachment,
+            d2_attachment_count, d2_body_length_log, d2_subject_length, d2_hour_of_day,
+            d2_is_weekend, d2_is_business_hour, d2_sender_domain_internal,
+            d2_sender_domain_carrier, d2_sender_domain_external, d2_target_user_position,
+            d2_language_en, d2_language_zh, d2_language_mixed, d2_references_count]
+  d3: [d3_role_Mgr, d3_role_CS, d3_role_Sch, d3_role_keyword_count, d3_role_sender_freq]

@@ -1,0 +1,13 @@
+# E6: stronger masking of business identifiers before D1 extraction (revision 1).
+# Version: v1 | Date: 2026-10-22
+# Applied on top of the existing redaction (06c) to subject and latest_text only; the
+# masked copy stays on the local disk and is read by the local extractor.
+
+source_run_id: run_20260526_123858
+sampled_relpath: phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
+output_prefix: rev1_privacy_mask
+
+# Public ocean-carrier names, masked as [CARRIER]; matched case-sensitively as whole words.
+carrier_names: [MSC, COSCO, Cosco, Maersk, MAERSK, Evergreen, EVERGREEN, Hapag-Lloyd, HAPAG, ONE,
+                CMA CGM, CMA, OOCL, Yang Ming, YANG MING, HMM, ZIM, PIL, Wan Hai, WAN HAI, SITC,
+                KMTC, TS Lines, Matson, Hamburg Sud, ESL, RCL, Sinokor, SINOKOR]

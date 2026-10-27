@@ -1,0 +1,8 @@
+The derived benchmark data in this directory (instance lists, splits, agent labels, LLM
+descriptors and context features) are licensed under the Creative Commons Attribution 4.0
+International licence (CC BY 4.0): https://creativecommons.org/licenses/by/4.0/
+
+They are derived from the Enron email corpus (research use, https://www.cs.cmu.edu/~enron/)
+and from the Apache Jira issue-tracking dataset of Diamantopoulos, Nastos and Symeonidis
+(MSR 2023; CC BY 4.0, https://doi.org/10.5281/zenodo.14253918), which remain under their
+original terms.

@@ -1,0 +1,94 @@
+# Revision-1 human annotation web tool
+# Version: v1.1 | Date: 2026-10-23 (v1.1: annotation rounds, submission safeguards)
+#
+# Serves the human annotation package built by build_human_annotation_package.py
+# through a guided, step-by-step web interface. Agent labels never leave the server.
+# Paths resolve through configs/paths.yaml (runs_base_dir).
+
+# Package directory relative to <runs_base_dir>.
+package_dir: rev1_eval_sets_20261022_161427/human_annotation
+answer_key_relpath: item_index.jsonl
+export_subdir: web_exports
+annotators: ["A1", "A2", "A3"]
+
+# Each round has its own database, item order and item subset. A frozen round is
+# never opened for writing. Which round enters the analysis is fixed in the
+# decision journal before that round starts (D053).
+active_round: r2
+rounds:
+  r1:
+    status: frozen                 # pilot round, excluded from analysis (D053)
+    database_filename: web_annotations.sqlite
+    order_seed: 20261022           # matches the xlsx sheets
+    item_ids_file: null
+  # Pilot: 24 items stratified over role x agent label x panel status, used to
+  # check that the blind interface behaves as intended and that the quality
+  # indicators fall in range before the full round. The pilot is not analysed;
+  # its database is discarded when the full round starts (D055).
+  r2_pilot:
+    status: frozen                 # finished and archived; not analysed (D057)
+    database_filename: _pilot_r2p_20261023/web_annotations_r2p.sqlite
+    order_seed: 20261023
+    item_ids_file: pilot_r2_item_ids.txt
+  r2:
+    status: closed                 # all three completed 1,180 on 2026-10-25; gate closed (D063)
+    database_filename: web_annotations_r2.sqlite
+    order_seed: 20261024
+    item_ids_file: null            # null = all main items; else a file of item ids relative to package_dir
+  # Further rounds are opened by switching active_round; each round keeps its own
+  # database, item order seed and event log. Add r4, r5, ... the same way. A round
+  # whose data is discarded set status to frozen (or superseded) and never reuse
+  # its database filename.
+  r3:
+    status: closed
+    database_filename: web_annotations_r3.sqlite
+    order_seed: 20261030
+    item_ids_file: null
+  r4:
+    status: closed
+    database_filename: web_annotations_r4.sqlite
+    order_seed: 20261102
+    item_ids_file: null
+
+# Submission safeguards. No timing limits and no timing-based screening: the
+# annotator submits whenever the judgement is made. record_timing is off, so the
+# browser does not accumulate active/step seconds and the server does not store
+# them; only submission timestamps remain, for auditing who submitted when.
+# Blind labelling: the candidate label derived from the ticked criteria is no
+# longer shown to the annotator, and no label is pre-selected (D054).
+safeguards:
+  enforce_min_seconds: false
+  min_seconds_base: 0
+  min_seconds_per_1k_chars: 0
+  min_seconds_cap: 0
+  record_timing: false
+  show_candidate_label: false
+  require_override_reason: false
+  block_paste: false               # allow pasting text into the note and reason fields
+
+# Fields that may be sent to the browser; everything else stays server-side.
+public_fields:
+  - item_id
+  - role
+  - subject
+  - from
+  - date_utc
+  - to_count
+  - cc_count
+  - has_attachment
+  - thread_depth
+  - recipient_position
+  - language
+  - email_body
+
+server:
+  host: 0.0.0.0
+  port: 6006          # HTTP port of the annotation tool
+  threads: 8
+
+# Environment variable names (values live in the repository .env file).
+env:
+  secret_key: ANNOT_WEB_SECRET_KEY
+  password_prefix: ANNOT_PW_       # ANNOT_PW_A1, ANNOT_PW_A2, ANNOT_PW_A3, ANNOT_PW_ADMIN
+
+ui_text: rev1_annotation_ui_zh.yaml

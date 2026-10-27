@@ -1,0 +1,145 @@
+# E12: recipient-aware public benchmark on the Enron corpus (revision 1).
+# Version: v1 | Date: 2026-10-23
+#
+# Instances are (email, recipient mailbox) pairs from mailboxes whose owner has a
+# known position in the ISI employee list. The recipient role is the owner's position
+# class; D2 is computed from the full corpus with the same pre-t rule as EMAIL-3R
+# (only messages dated before the target email), D3 from the role statements below.
+# The corpus is public; descriptors and labels may be obtained through external APIs.
+
+output_prefix: rev1_e12_enron
+
+corpus:
+  parquet_glob: datasets/public/enron/corbt_enron_emails/data/train-*.parquet
+  source: "HuggingFace corbt/enron-emails (517,401 messages, 150 mailboxes)"
+positions:
+  csv: datasets/public/enron/positions/E-Mails-updated.csv
+  source: "ISI employee list (Shetty and Adibi 2004), reconstructed at github.com/ahr85/enron"
+  isi_reference_csv: literature/enron_sources/Enron_Employee_Status_isi_wayback20131213.csv   # ISI Enron_Employee_Status.xls, Wayback 2013-12-13
+  isi_match_min_ratio: 0.75        # owner name vs ISI name similarity (difflib) for a match
+
+roles:
+  EXE: ["CEO", "President", "Vice President", "Managing Director"]
+  TRD: ["Trader"]
+  STF: ["Employee"]
+sender_rank:                       # D2 sender seniority; unknown senders rank 0
+  3: ["CEO", "President", "Vice President", "Managing Director", "In House Lawyer"]
+  2: ["Director", "Manager"]
+  1: ["Trader", "Employee", "N/A"]
+
+sent_folders: [sent, sent_items, _sent_mail, sent_mail]
+duplicate_folders: [all_documents, discussion_threads]   # Lotus Notes views that repeat other folders
+history_window: ["1998-01-01", "2002-06-30"]
+target_window: ["2000-06-01", "2001-12-31"]
+
+instances:
+  per_role: 1500
+  min_owner_received: 100          # owners with fewer received messages in the target window are skipped
+  cross_role_emails: 300           # emails received by owners of two or more roles; all go to the test split
+  min_body_chars: 40
+  max_body_chars: 4000
+  ascii_ratio: 0.85
+  seed: 20261023
+splits:
+  test_share: 0.20                 # thread-disjoint, besides the cross-role emails
+  seed: 20261023
+
+role_desc:                          # D1 prompt: replaces the EMAIL-3R role descriptions
+  EXE: "a senior executive who approves deals and budgets, handles escalations and regulatory exposure, and sets business-unit strategy"
+  TRD: "an energy trader who executes and manages power and gas trades, positions, prices and counterparty deals"
+  STF: "an operations and support staff member handling scheduling, deal confirmations, settlements, contract administration and reporting"
+d1_domain: ["a logistics/shipping company", "an energy trading company"]   # replaced in the D1 system prompt
+
+role_statements:                    # D3 similarity; responsibilities only, no importance criteria
+  EXE: "Setting business-unit strategy, approving deals, budgets and organisational changes, managing regulatory and political exposure, handling escalations from trading desks and counterparties, and reporting to senior leadership."
+  TRD: "Executing and managing physical and financial power and gas trades, monitoring positions, prices and market fundamentals, negotiating deals with counterparties, and reconciling deal entries with risk and scheduling."
+  STF: "Scheduling power and gas flows and pipeline nominations, preparing deal confirmations and settlements, administering contracts, producing risk and position reports, and supporting commercial teams with data and systems."
+
+agent_prompt_replacements:          # shipping-specific examples in the agent prompts -> energy-trading equivalents
+  - ["Pending shipments where delays cascade (vessel schedules are rigid)",
+     "Pending trades, nominations or schedules where delays cascade (market and pipeline deadlines are rigid)"]
+  - ["vessel schedules, cut-off times", "trading, nomination and scheduling deadlines"]
+  - ["In shipping/logistics business,", "In energy trading business,"]
+  - ["pending shipment, etc.", "pending trade or schedule, etc."]
+
+role_criteria:                      # agent-panel prompts; same structure as the EMAIL-3R role cards
+  EXE: |-
+    ROLE: Senior Executive (EXE)
+    Core responsibilities: Setting business-unit strategy, approving deals, budgets and
+    organisational changes, managing regulatory and political exposure, handling escalations
+    from trading desks and counterparties, and reporting to senior leadership.
+
+    Classification criteria for this role:
+    - HIGH: Emails requiring same-day action — a decision or approval requested of the executive,
+      regulatory or legal exposure, major counterparty or credit problems, crisis escalations,
+      requests from top management with a deadline, or any content where delay causes
+      DEMONSTRABLE financial, legal or reputational loss.
+    - MEDIUM: Emails requiring action within this week — strategy and planning discussions,
+      hiring and organisational matters, deal reviews without same-day pressure, meeting
+      requests, reports that need the executive's input.
+    - LOW: Emails that can be batch-processed or archived — newsletters, press clippings, mass
+      announcements, routine operational reports, FYI-only forwards, social invitations, or
+      content outside the executive's responsibilities.
+
+    CALIBRATION ANCHORS for EXE:
+      HIGH example: "The regulator expects our response to the price-cap filing by 5pm today;
+        we need your sign-off on the final language."
+      MEDIUM example: "Attached is the draft Q3 headcount plan for the West desk; please send
+        comments before Thursday's staff meeting."
+      LOW example: "Today's press clippings are attached for your information."
+  TRD: |-
+    ROLE: Energy Trader (TRD)
+    Core responsibilities: Executing and managing physical and financial power and gas trades,
+    monitoring positions, prices and market fundamentals, negotiating deals with counterparties,
+    and reconciling deal entries with risk and scheduling.
+
+    Classification criteria for this role:
+    - HIGH: Emails requiring same-day action — deal discrepancies or mis-booked trades, position
+      or P&L problems, counterparty disputes, credit or limit breaches, market moves that need
+      an immediate response, or bid and nomination deadlines today.
+    - MEDIUM: Emails requiring action within this week — deal confirmations to review, curve or
+      model questions, desk coordination, upcoming market events, information requests without
+      same-day pressure.
+    - LOW: Emails that can be batch-processed or archived — market newsletters, research digests,
+      mass announcements, automated system notices, social or HR messages, FYI-only forwards.
+
+    CALIBRATION ANCHORS for TRD:
+      HIGH example: "Tomorrow's 25 MW deal is booked as a sale but the counterparty confirms it as
+        a purchase; it must be fixed before the schedule goes out at 2pm."
+      MEDIUM example: "Can you review the forward-curve assumptions for Q1 gas before Friday's
+        risk meeting?"
+      LOW example: "Daily trading platform summary: 4,500 transactions completed today."
+  STF: |-
+    ROLE: Operations and Support Staff (STF)
+    Core responsibilities: Scheduling power and gas flows and pipeline nominations, preparing
+    deal confirmations and settlements, administering contracts, producing risk and position
+    reports, and supporting commercial teams with data and systems.
+
+    Classification criteria for this role:
+    - HIGH: Emails requiring same-day action — scheduling or nomination errors, confirmation or
+      settlement deadlines today, invoice or payment problems with counterparties, system
+      outages that stop operations, or direct requests with a deadline today.
+    - MEDIUM: Emails requiring action within this week — routine confirmations, contract
+      paperwork, report preparation, data corrections without same-day pressure, coordination
+      requests from traders.
+    - LOW: Emails that can be batch-processed or archived — mass announcements, newsletters,
+      automated reports with no action needed, social events, FYI-only forwards.
+
+    CALIBRATION ANCHORS for STF:
+      HIGH example: "The pipeline flagged our nomination for tomorrow's gas day as invalid;
+        please resubmit before the 11:30 cycle deadline."
+      MEDIUM example: "Please prepare the confirmation letters for last week's deals by
+        Wednesday."
+      LOW example: "Reminder: the company 5K run is this Saturday; sign up on the intranet."
+
+semantic:
+  model: BAAI/bge-m3
+  max_len: 512
+  batch_size: 64
+mined_ngrams:
+  n_folds: 5
+  fold_seed: 42
+  ngram_range: [1, 2]
+  min_df: 5
+  top_k: 300
+  alpha: 1.0

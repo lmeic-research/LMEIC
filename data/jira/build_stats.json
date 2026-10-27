@@ -1,0 +1,59 @@
+{
+  "source": "datasets/public/apache_jira/raw",
+  "n_issues": 1157541,
+  "n_projects": 656,
+  "n_events": 9783070,
+  "n_priority_changed": 93664,
+  "pct_priority_changed": 8.09,
+  "provenance": {
+    "no_change_use_current": 1063877,
+    "earliest_change_from": 81290,
+    "merged_initial_triage": 10410,
+    "first_change_from_null": 1964
+  },
+  "priority_creation": {
+    "Major": 810842,
+    "Minor": 212634,
+    "Critical": 46764,
+    "Blocker": 31865,
+    "Trivial": 30559,
+    "nan": 13685,
+    "Normal": 5734,
+    "P2": 3389,
+    "P3": 660,
+    "P1": 475,
+    "Low": 295,
+    "High": 134,
+    "Important": 120,
+    "Not a Priority": 102,
+    "P0": 98,
+    "P4": 56,
+    "Urgent": 45,
+    "Very Important": 36,
+    "Must Do": 26,
+    "Blocking": 8,
+    "Best Effort": 5,
+    "P5": 4,
+    "Normal (not available)": 2,
+    "Medium": 1,
+    "Cosmetic": 1,
+    "Postponed": 1
+  },
+  "share_major": 0.7005,
+  "date_range": [
+    "0010-04-03 23:04:00+00:00",
+    "2024-11-01 22:41:02+00:00"
+  ],
+  "text_edited_later": 266570,
+  "projects_selected": 67,
+  "selected_issues": 589594,
+  "criteria": {
+    "five_levels": 443,
+    "over_5_years": 502,
+    "over_150_changed": 81,
+    "note": "Li 2024 C3 (>3000 commits) is not available in this dump and is not applied"
+  },
+  "merge_minutes": 5,
+  "elapsed_s": 284.5,
+  "git_commit": "afca48c"
+}

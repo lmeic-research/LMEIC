@@ -1,0 +1,60 @@
+# Agent labelling for revision-1 evaluation sets.
+# Prompts, consensus rule (2/3 majority), single debate round and adjudication are
+# reused unchanged from email3r/code/annotation (v1.0 pipeline). Only the model
+# snapshots and endpoints differ; the v1.0 agent C (claude-3-5-sonnet-20241022)
+# has no available channel and is replaced by claude-sonnet-4.5 (DJ D043).
+
+source_run_id: run_20260526_123858
+output_prefix: rev1_agent_labels
+env_file: .env
+
+request:
+  temperature: 0.3
+  max_tokens: 512
+  max_retries: 10
+  request_timeout_s: 120
+  max_concurrent: 16                 # default per model
+  max_concurrent_per_model:          # OpenRouter caps new accounts at 20 requests/min for Claude Sonnet 4.5
+    anthropic/claude-sonnet-4.5: 2
+    claude-sonnet-4-5-20250929: 3
+  # An instance is accepted only with all three round-0 votes; incomplete panels
+  # are retried on the next pass (the v1.0 consensus rule would accept two
+  # agreeing votes).
+
+endpoints:
+  openrouter: {base_url_env: OPENROUTER_BASE_URL, key_env: OPENROUTER_API_KEY}
+  proxy: {base_url_env: PROXY_BASE_URL, key_env: PROXY_API_KEY}
+
+agents:
+  A: {model: deepseek/deepseek-chat-v3-0324, endpoint: openrouter, provider_order: [SiliconFlow], json_mode: false}
+  B: {model: openai/gpt-4o-mini-2024-07-18, endpoint: openrouter, provider_order: [OpenAI], json_mode: true}
+  C: {model: anthropic/claude-sonnet-4.5, endpoint: openrouter, provider_order: [Anthropic, Amazon Bedrock, Google, Azure],
+      json_mode: false}
+# proxy quota ran out on 2026-10-22 (gpt-4o at 21:00, all models by 22:15); from then on every
+# agent uses OpenRouter with the same snapshots. Votes record the serving provider.
+adjudicator: {model: openai/gpt-4o-2024-11-20, endpoint: openrouter, provider_order: [OpenAI], json_mode: true}
+
+human_package_key: datasets/email3r_runs/rev1_eval_sets_20261022_161427/human_annotation/item_index.jsonl
+
+sets:
+  core_test:                         # v1.0 test emails in the human study; panel-shift check against v1.0 labels
+    kind: sampled_by_key_source
+    relpath: phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
+    key_source: core_test
+    id_field: message_id
+  cross_role:
+    kind: jsonl
+    path: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/cross_role_instances.jsonl.gz
+    id_field: instance_id
+  fresh_holdout:
+    kind: jsonl
+    path: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/fresh_holdout_instances.jsonl.gz
+    id_field: instance_id
+  e1b:
+    kind: jsonl
+    path: datasets/email3r_runs/rev1_e1b_manager_20261022_194017/e1b_instances.jsonl.gz
+    id_field: instance_id
+  e12_enron:                         # run through e12_enron.run_api (Enron role cards)
+    kind: jsonl
+    path: datasets/email3r_runs/rev1_e12_enron_20261022_235509/instances.jsonl.gz
+    id_field: instance_id

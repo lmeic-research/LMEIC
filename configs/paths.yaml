@@ -1,0 +1,6 @@
+# Path configuration. Copy to paths.local.yaml or edit in place.
+# ${repo_root} may be used in any value below.
+repo_root: .
+output:
+  runs_base_dir: ${repo_root}/runs
+  release_dir: ${repo_root}/release

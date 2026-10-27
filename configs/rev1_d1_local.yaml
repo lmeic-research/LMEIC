@@ -1,0 +1,26 @@
+# E4: open-weight D1 extractors served locally with vLLM (no external API).
+# Prompt, one-shot example and field schema are imported unchanged from
+# email3r/code/framework/features/extract_d1_v2.py; decoding is constrained to the
+# field schema.
+
+source_run_id: run_20260526_123858
+sampled_relpath: phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
+output_prefix: rev1_d1_local
+
+sampling:
+  temperature: 0
+  max_tokens: 400
+  seed: 42
+
+models:
+  qwen25_7b:
+    hf_id: Qwen/Qwen2.5-7B-Instruct
+    dtype: bfloat16
+    max_model_len: 8192
+    gpu_memory_utilization: 0.60
+  qwen3_8b:
+    hf_id: Qwen/Qwen3-8B
+    dtype: bfloat16
+    max_model_len: 8192
+    gpu_memory_utilization: 0.60
+    chat_template_kwargs: {enable_thinking: false}
