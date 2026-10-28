@@ -1,6 +1,6 @@
 """
 Reference rebuild runner: evaluates the configured variants one factor at a time.
-Version: v1.2 | Date: 2026-10-22
+Version: v1.3 | Date: 2026-10-28
 
 For each variant: build features, tune (unless v1.0 parameters are reused), fit the
 five-seed stacking (or single XGB), and save metrics, all-seed test predictions and
@@ -9,6 +9,9 @@ so concurrent runs on the same output directory keep each other's rows.
 v1.1 optional variant keys: d1_file (descriptor file, relative to repo_root, replacing
 the GPT-4o descriptors for all instances; keyed by row_idx) and params_from (reuse the
 tuned parameters of another variant in the same output directory).
+v1.3: --coreader-dir takes the co-reader scores from a co-reader bank entry (probs.parquet)
+instead of <out-dir>/coreader_probs_grouped.parquet, and --suffix is appended to each variant's
+output directory name (E21: one set of variants per co-reader seed).
 
 Usage:
   python -m lmeic.reference.run_reference [--out-dir DIR] [--only R1,R2]
@@ -60,16 +63,17 @@ def load_d1_file(path: Path) -> tuple[pd.DataFrame, dict]:
                                       "n_default_filled": len(missing), "n_unknown_intent": n_unknown_intent}
 
 
-def run_variant(v: dict, cfg: dict, paths: dict, out_dir: Path) -> dict:
+def run_variant(v: dict, cfg: dict, paths: dict, out_dir: Path, coreader_dir: Path | None = None,
+                suffix: str = "") -> dict:
     repo_root = Path(paths["repo_root"])
     run_dir = source_run_dir(paths, cfg["source_run_id"])
-    vdir = out_dir / v["name"]
+    vdir = out_dir / (v["name"] + suffix)
     vdir.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
 
     probs = None
     if "coreader" in v["groups"]:
-        p = out_dir / "coreader_probs_grouped.parquet"
+        p = coreader_dir / "probs.parquet" if coreader_dir else out_dir / "coreader_probs_grouped.parquet"
         assert p.exists(), f"missing {p}; run the co-reader step first"
         probs = pd.read_parquet(p)
 
@@ -125,7 +129,7 @@ def run_variant(v: dict, cfg: dict, paths: dict, out_dir: Path) -> dict:
                          "p_high": float(pr[0]), "p_med": float(pr[1]), "p_low": float(pr[2])})
     pd.DataFrame(rows).to_parquet(vdir / "test_predictions_all_seeds.parquet", index=False)
 
-    info = {"variant": v, "d1_file_info": d1_info, "n_features": len(cols), "feature_columns": cols,
+    info = {"variant": v, "coreader_dir": str(coreader_dir) if coreader_dir else None, "d1_file_info": d1_info, "n_features": len(cols), "feature_columns": cols,
             "n_dev": int(len(yy)), "n_test": int(len(yt)), "seeds": cfg["seeds"],
             "oof_meta_f1": {s: res[s].get("oof_f1") for s in cfg["seeds"]},
             "elapsed_s": round(time.time() - t0, 1)}
@@ -134,7 +138,7 @@ def run_variant(v: dict, cfg: dict, paths: dict, out_dir: Path) -> dict:
     mf = agg["overall"]["macro_f1"]
     logger.info("[%s] macro-F1 %.4f +/- %.4f (nfeat=%d, %.0fs)", v["name"], mf["mean"], mf["std"],
                 len(cols), info["elapsed_s"])
-    return {"variant": v["name"], "d2d3": v["d2d3"], "protocol": v["protocol"], "arch": v["arch"],
+    return {"variant": v["name"] + suffix, "d2d3": v["d2d3"], "protocol": v["protocol"], "arch": v["arch"],
             "groups": "+".join(v["groups"]), "n_features": len(cols),
             "macro_f1_mean": mf["mean"], "macro_f1_std": mf["std"],
             "Mgr": agg["per_role"]["Mgr"]["macro_f1"]["mean"],
@@ -146,6 +150,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-dir", default=None)
     ap.add_argument("--only", default=None, help="comma-separated variant name prefixes")
+    ap.add_argument("--coreader-dir", default=None, help="co-reader bank entry with probs.parquet")
+    ap.add_argument("--suffix", default="", help="appended to each variant directory name")
     args = ap.parse_args()
     paths, cfg = load_config(CONFIG_NAME)
     out_dir = Path(args.out_dir) if args.out_dir else new_output_dir(paths, cfg["output_prefix"])
@@ -162,7 +168,8 @@ def main() -> None:
     summ_path = out_dir / "summary.csv"
     summary = []
     for v in variants:
-        row = run_variant(v, cfg, paths, out_dir)
+        row = run_variant(v, cfg, paths, out_dir, Path(args.coreader_dir) if args.coreader_dir else None,
+                          args.suffix)
         summary = pd.read_csv(summ_path).to_dict("records") if summ_path.exists() else []
         summary = [r for r in summary if r["variant"] != row["variant"]] + [row]
         pd.DataFrame(summary).to_csv(summ_path, index=False)

@@ -1,6 +1,8 @@
 """
 Co-reader bank for the robustness study (revision 1, E10).
-Version: v1 | Date: 2026-10-22
+Version: v1.1 | Date: 2026-10-28
+  v1.1: the full-pool model also scores the external sets (rev1_reference.yaml: external_sets)
+        -> probs_external.parquet (instance_id, set, plm_p_*), for E21 multi-seed scoring.
 
 For each configured candidate encoder and seed: development-pool (train+val) scores from
 thread-grouped cross-fitting (shared folds, fold seed from the config) and test scores
@@ -36,7 +38,7 @@ sys.path.insert(0, str(_REPO_ROOT))
 
 from lmeic.reference.coreader import PROB_COLS, TextDS, class_weights  # noqa: E402
 from lmeic.reference.folds import check_group_disjoint, make_folds  # noqa: E402
-from lmeic.common.rev1_common import load_config, write_json  # noqa: E402
+from lmeic.common.rev1_common import load_config, read_jsonl, write_json  # noqa: E402
 from lmeic.common.data_loader import LABEL_MAP, load_split  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -83,9 +85,10 @@ def predict(model, tok, x, cc: dict) -> np.ndarray:
     return np.vstack(out)
 
 
-def run_one(name: str, cc: dict, seed: int, fold_seed: int, n_folds: int, out_root: Path) -> None:
+def run_one(name: str, cc: dict, seed: int, fold_seed: int, n_folds: int, out_root: Path,
+            ext_sets: dict | None = None, repo: Path | None = None) -> None:
     cdir = out_root / f"{name}_s{seed}"
-    if (cdir / "probs.parquet").exists():
+    if (cdir / "probs.parquet").exists() and (ext_sets is None or (cdir / "probs_external.parquet").exists()):
         logger.info("%s seed %d already complete", name, seed)
         return
     cdir.mkdir(parents=True, exist_ok=True)
@@ -107,6 +110,15 @@ def run_one(name: str, cc: dict, seed: int, fold_seed: int, n_folds: int, out_ro
         del m; torch.cuda.empty_cache()
     m = train(tok, x, y, cc, seed=seed + 100)
     p_te = predict(m, tok, te["latest_text"].fillna("").values, cc)
+    if ext_sets:
+        frames = []
+        for set_name, rel in ext_sets.items():
+            rows_e = pd.DataFrame(read_jsonl(repo / rel))
+            f = pd.DataFrame(predict(m, tok, rows_e["latest_text"].fillna("").values, cc), columns=PROB_COLS)
+            f.insert(0, "set", set_name)
+            f.insert(0, "instance_id", rows_e["instance_id"].astype(str).values)
+            frames.append(f)
+        pd.concat(frames, ignore_index=True).to_parquet(cdir / "probs_external.parquet", index=False)
     del m; torch.cuda.empty_cache()
     y_te = te["label_final"].map(LABEL_MAP).values
 
@@ -132,6 +144,7 @@ def main() -> None:
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--candidates", default=None)
     ap.add_argument("--seeds", default=None)
+    ap.add_argument("--external", action="store_true", help="also score the external sets with the full-pool model")
     args = ap.parse_args()
     paths, cfg = load_config(CONFIG_NAME)
     assert torch.cuda.is_available(), "CUDA required"
@@ -144,7 +157,8 @@ def main() -> None:
         spec.pop("seeds", None)
         cc = {**bank["common"], **spec}
         for seed in seeds:
-            run_one(name, cc, seed, bank["fold_seed"], cfg["n_folds"], out_root)
+            run_one(name, cc, seed, bank["fold_seed"], cfg["n_folds"], out_root,
+                    cfg["external_sets"]["sets"] if args.external else None, Path(paths["repo_root"]))
 
 
 if __name__ == "__main__":

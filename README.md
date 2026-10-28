@@ -118,6 +118,36 @@ these scripts and in `configs/rev1_*.yaml` (for example `private/runs/...`, `v1_
 placeholders for locations of the private data. The scripts in `lmeic/human_study/` additionally need
 the human-annotation data, which are not released, so they cannot be run from this repository.
 
+## Revision results (v1.0.1)
+
+The multi-seed results of the revision were produced with the scripts below (EMAIL-3R inputs are
+private; `private/runs/...` in `configs/rev1_reference.yaml` stands for their location, and `<run dir>`
+for a `rev1_reference` output directory).
+
+```bash
+# 1. Co-reader: fp32 XLM-R, five seeds (42, 123, 456, 789, 2026), also scores the external sets (CUDA GPU)
+python -m lmeic.analysis.coreader_bank --out-dir <run dir>/coreader_bank --candidates xlmr_base_fp32 --external
+
+# 2. LMEIC-full and its context ablations, one set of variants per co-reader seed (five decision-layer seeds each)
+for s in 42 123 456 789 2026; do
+  python -m lmeic.reference.run_reference --out-dir <run dir> --only E21_ \
+      --coreader-dir <run dir>/coreader_bank/xlmr_base_fp32_s$s --suffix _cr$s
+done
+
+# 3. Pooled systems (5 co-reader seeds x 5 decision-layer seeds = 25 runs) and paired comparisons, then the table
+python -m lmeic.reference.analyse_reference --run-dir <run dir>
+python -m lmeic.reference.main_table --run-dir <run dir> --analysis <analysis dir> \
+    --proposed R2_v3_grouped_explicit,E21_full_5cr --tag e21
+```
+
+- **LoRA, five seeds.** `python -m lmeic.baselines.lora_classifier --out-root <dir> --input role --seed <s>` for each
+  seed `s`; the runs are pooled as `E22_lora_5seed` in `analysis.pooled_systems`.
+- **Jira column orders.** XGBoost column subsampling depends on the column order, so the identity ablation repeats every arm
+  under five orders: `python -m benchmarks.jira.run_id_ablation --d1 data/jira/d1_qwen25_7b.jsonl --n-orders 5 --device cpu`.
+  Use `--device cpu` (the default): the GPU build of XGBoost gives different and much worse fits on these sparse inputs.
+- `lmeic.deploy.latency_d1_local` times single-email local D1 extraction on an idle GPU;
+  `lmeic.human_study.confusion_census` and `lmeic.human_study.crossrole_multiseed` need the unreleased human-annotation data.
+
 ## Citation
 
 See `CITATION.cff`. The citation will be updated with the journal reference on publication.

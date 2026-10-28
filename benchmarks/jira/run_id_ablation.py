@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 """
 E18c: Apache Jira — how much of the signal is reporter/project identity rather than content?
-Version: v1.1 | Date: 2026-10-26
+Version: v1.2 | Date: 2026-10-28
 v1.1: paired bootstrap on seed-averaged macro-F1 (see run_d1_fusion v1.2); adds full+d1 - full.
+v1.2: --n-orders repeats every arm under that many column orders (order 0 = original), because
+      XGBoost column subsampling depends on column order: the same features in another order moved the
+      S2 D1 gain from +4.09 to +2.74 points (run_d1_fusion). Estimates average over orders x seeds.
+      --device cuda runs XGBoost on the GPU, but on these sparse TF-IDF inputs the GPU build gives
+      different and much worse fits (S1 one seed: 0.359 GPU vs 0.511 CPU), so E26 uses the
+      CPU (default) with --n-jobs threads. (E26)
 
 Same sample, rows (valid D1), time split and XGBoost settings as run_d1_fusion v1.1. The concern
 (experiment card, E18): a model may learn "this reporter / this project tends to file Major" instead
@@ -39,7 +45,9 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT))
 
 from benchmarks.jira.run_baselines import HIST_COLS, history_features, load, macro  # noqa: E402
-from benchmarks.jira.run_d1_fusion import d1_frame, paired_boot, paired_boot_seeds, xgb_runs  # noqa: E402
+from benchmarks.jira.run_baselines import SEEDS  # noqa: E402
+from benchmarks.jira.run_d1_fusion import d1_frame, paired_boot, paired_boot_seeds  # noqa: E402
+from xgboost import XGBClassifier  # noqa: E402
 from lmeic.common.rev1_common import git_commit, write_json  # noqa: E402
 
 from benchmarks.jira.sample_ids import DEFAULT_SAMPLE_IDS, read_sample_ids  # noqa: E402
@@ -50,7 +58,27 @@ logger = logging.getLogger(__name__)
 REPORTER_COLS = ["reporter_prior_n", "reporter_prior_high_share", "reporter_prior_low_share"]
 
 
-def run_setting(df: pd.DataFrame, d1c: list[str], setting: str) -> dict:
+def xgb_runs_orders(Xtr, ytr, Xte, yte, k, n_orders: int, device: str, n_jobs: int = 8):
+    """Five seeds under each of n_orders column orders; returns per-run F1, majority vote, all predictions."""
+    fs, preds = [], []
+    for o in range(n_orders):
+        perm = np.arange(Xtr.shape[1]) if o == 0 else np.random.default_rng(1000 + o).permutation(Xtr.shape[1])
+        A, B = Xtr[:, perm], Xte[:, perm]
+        for s in SEEDS:
+            m = XGBClassifier(n_estimators=400, max_depth=6, learning_rate=0.08, subsample=0.9, colsample_bytree=0.8,
+                              random_state=s, n_jobs=n_jobs, tree_method="hist", device=device,
+                              **({"objective": "multi:softprob", "num_class": k, "eval_metric": "mlogloss"} if k > 2
+                                 else {"objective": "binary:logistic", "eval_metric": "logloss"}))
+            m.fit(A, ytr)
+            p = m.predict(B)
+            fs.append(macro(yte, p, k)); preds.append(p)
+    P = np.vstack(preds)
+    vote = np.apply_along_axis(lambda c: np.bincount(c, minlength=k).argmax(), 0, P)
+    return fs, vote, P
+
+
+def run_setting(df: pd.DataFrame, d1c: list[str], setting: str, n_orders: int = 1, device: str = "cpu",
+                n_jobs: int = 8) -> dict:
     if setting == "S2":
         df = df[df["priority_creation"] != "Major"].reset_index(drop=True)
     present = sorted(df["y"].unique()); k = len(present)
@@ -77,7 +105,7 @@ def run_setting(df: pd.DataFrame, d1c: list[str], setting: str) -> dict:
             parts = bl + ([D] if d1 else [])
             Xa = hstack([b[0] for b in parts]).tocsr(); Xb = hstack([b[1] for b in parts]).tocsr()
             arm = f"{name}{'+d1' if d1 else ''}"
-            fs, vote, allp[arm] = xgb_runs(Xa, ytr, Xb, yte, k)
+            fs, vote, allp[arm] = xgb_runs_orders(Xa, ytr, Xb, yte, k, n_orders, device, n_jobs)
             res[arm] = {"macro_f1_mean": float(np.mean(fs)), "macro_f1_sd": float(np.std(fs)), "by_seed": fs,
                         "vote_macro_f1": macro(yte, vote, k),
                         "vote_per_class_f1": f1_score(yte, vote, average=None, labels=list(range(k)),
@@ -92,6 +120,7 @@ def run_setting(df: pd.DataFrame, d1c: list[str], setting: str) -> dict:
     for kk, v in comps.items():
         logger.info("%s %s: %+.4f CI %s p=%.3f", setting, kk, v["diff"], v["ci95"], v["p_two_sided"])
     return {"setting": setting, "n_train": len(train), "n_test": len(test), "classes": [int(c) for c in present],
+            "n_orders": n_orders, "runs_per_arm": n_orders * len(SEEDS), "device": device, "n_jobs": n_jobs,
             "arms": res, "comparisons": comps, "comparisons_majority_vote": comps_vote}
 
 
@@ -101,6 +130,9 @@ def main() -> None:
     ap.add_argument("--sample-ids", default=DEFAULT_SAMPLE_IDS)
     ap.add_argument("--d1", required=True)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--n-orders", type=int, default=1)
+    ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"])
+    ap.add_argument("--n-jobs", type=int, default=8)
     args = ap.parse_args()
     t0 = time.time(); proc = Path(args.processed)
     df = load(proc)
@@ -115,7 +147,7 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     out = {"n_rows": len(df), "reporter_cols": REPORTER_COLS, "d1_file": args.d1, "git_commit": git_commit(_REPO_ROOT)}
     for s in ("S1", "S2"):
-        out[s] = run_setting(df, d1c, s)
+        out[s] = run_setting(df, d1c, s, args.n_orders, args.device, args.n_jobs)
         write_json(out_dir / "results.json", {**out, "elapsed_s": round(time.time() - t0, 1)})
     logger.info("saved %s", out_dir)
 

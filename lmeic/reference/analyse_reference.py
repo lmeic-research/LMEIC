@@ -1,7 +1,10 @@
 """
 Analysis of the reference rebuild: per-variant metrics, sender-disjoint subsets and
 thread-clustered paired bootstrap comparisons.
-Version: v1.1 | Date: 2026-10-23 (v1.1: single-seed external systems via analysis.extra_predictions)
+Version: v1.2 | Date: 2026-10-28 (v1.1: single-seed external systems via analysis.extra_predictions;
+  v1.2: analysis.pooled_systems stacks several runs into one system, e.g. LMEIC-full over five co-reader
+  seeds x five decision-layer seeds (E21), LoRA over five seeds (E22), the five fp32 co-readers as a
+  five-seed fine-tuned XLM-R; --only-comparisons restricts the comparison list)
 
 Sender-disjoint subset: test emails whose sender address never occurs in the
 development pool (train+val). Paired comparisons resample test threads with
@@ -70,6 +73,38 @@ def load_systems(run_dir: Path, src_dir: Path, cfg: dict, test_mids: list[str]) 
     return out
 
 
+def pooled_systems(run_dir: Path, cfg: dict, test_mids: list[str]) -> tuple[dict, dict]:
+    """Systems built by stacking several runs; returns ({name: matrix}, {name: rows per group})."""
+    lab = {l: i for i, l in enumerate(LABELS)}
+    repo = Path(cfg["_repo_root"])
+    out, groups = {}, {}
+    for name, spec in cfg["analysis"].get("pooled_systems", {}).items():
+        mats, sizes = [], []
+        if spec["kind"] == "variant_glob":
+            dirs = sorted(d for d in run_dir.glob(spec["glob"]) if (d / "test_predictions_all_seeds.parquet").exists())
+            for d in dirs:
+                df = pd.read_parquet(d / "test_predictions_all_seeds.parquet").assign(
+                    message_id=lambda x: x["message_id"].map(norm_mid))
+                block = [df[df["seed"] == s].drop_duplicates("message_id").set_index("message_id")
+                         .loc[test_mids, "pred"].map(lab).values for s in sorted(df["seed"].unique())]
+                mats += block; sizes.append(len(block))
+        elif spec["kind"] == "probs_glob":
+            files = sorted(f for f in (repo / spec["root"]).glob(spec["glob"]))
+            for f in files:
+                df = pd.read_parquet(f)
+                df = df[df["split"] == "test"] if "split" in df else df
+                df = df.assign(message_id=df["message_id"].map(norm_mid)).drop_duplicates("message_id").set_index("message_id")
+                mats.append(df.loc[test_mids, ["plm_p_high", "plm_p_med", "plm_p_low"]].values.argmax(1)); sizes.append(1)
+        else:
+            raise ValueError(spec["kind"])
+        if len(sizes) < spec.get("min_groups", 1):
+            logger.info("skip pooled %s: %d of %d groups", name, len(sizes), spec.get("min_groups", 1))
+            continue
+        out[name], groups[name] = np.vstack(mats), sizes
+        logger.info("pooled %s: %d groups, %d runs", name, len(sizes), sum(sizes))
+    return out, groups
+
+
 def macro(y, P, idx=None) -> float:
     """Seed-averaged macro-F1 over the three classes (zero when a class has no support or predictions)."""
     if idx is not None:
@@ -84,6 +119,7 @@ def macro(y, P, idx=None) -> float:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
+    ap.add_argument("--only-comparisons", default=None, help="keep comparisons whose a or b starts with one of these prefixes")
     args = ap.parse_args()
     run_dir = Path(args.run_dir)
     paths, cfg = load_config(CONFIG_NAME)
@@ -105,6 +141,8 @@ def main() -> None:
     logger.info("sender-unseen test emails: %d / %d", unseen.sum(), len(unseen))
 
     systems = load_systems(run_dir, src_dir, cfg, test_mids)
+    pooled, pooled_groups = pooled_systems(run_dir, cfg, test_mids)
+    systems.update(pooled)
     rows = []
     for name, P in systems.items():
         r = {"system": name, "n_seeds": P.shape[0], "macro_f1": macro(y, P),
@@ -121,7 +159,11 @@ def main() -> None:
     boots = [np.concatenate([members[t] for t in rng.choice(uniq, len(uniq), replace=True)])
              for _ in range(ac["n_boot"])]
     comps = []
-    for a, b in ac["comparisons"]:
+    comp_list = ac["comparisons"] + ac.get("pooled_comparisons", [])
+    if args.only_comparisons:
+        pref = tuple(args.only_comparisons.split(","))
+        comp_list = [(a, b) for a, b in comp_list if a.startswith(pref) or b.startswith(pref)]
+    for a, b in comp_list:
         if a not in systems or b not in systems:
             logger.info("skip %s vs %s (not available)", a, b)
             continue
@@ -141,6 +183,7 @@ def main() -> None:
     write_json(out / "analysis_meta.json", {
         "n_test": int(len(y)), "n_test_threads": int(len(uniq)), "n_sender_unseen": int(unseen.sum()),
         "bootstrap": {"unit": "thread", "n_boot": ac["n_boot"], "seed": ac["boot_seed"]},
+        "pooled_groups": pooled_groups,
         "git_commit": git_commit(Path(paths["repo_root"]))})
     logger.info("systems:\n%s", tab.round(4).to_string(index=False))
     if len(comp):

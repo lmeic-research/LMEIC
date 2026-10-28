@@ -1,6 +1,6 @@
 """Generate the LMEIC-full role-wise error profile figure.
 
-Version: v1.0, 2026-06-04.
+Version: v1.1, 2026-10-28 (v1.1: y-axis reads "Reference (agent) label" instead of "Ground-truth label").
 
 This script reads saved LMEIC-full test predictions and creates a publication
 figure with per-role confusion matrices using the approved LMEIC colour scheme.
@@ -142,7 +142,7 @@ def plot_error_profile(rows: list[dict[str, str]]) -> plt.Figure:
         ax.set_xticks(range(len(LABELS)), labels=LABELS, rotation=30, ha="right")
         ax.set_yticks(range(len(LABELS)), labels=LABELS)
         ax.set_xlabel("Predicted label")
-        ax.set_ylabel("Ground-truth label")
+        ax.set_ylabel("Reference (agent) label")
         annotate_matrix(ax, matrix, max_count)
 
         for boundary in np.arange(-0.5, len(LABELS), 1):

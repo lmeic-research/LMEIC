@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 E11 / E10: LoRA-tuned LLM sequence classifier on EMAIL-3R (GPU).
-Version: v1.1 | Date: 2026-10-23 (v1.1: --external)
+Version: v1.2 | Date: 2026-10-28 (v1.1: --external; v1.2: --seed overrides lora.seed, for E22)
 
   --input role   "Recipient role: <description>\\nSubject: ...\\n\\n<body>" (E11 direct classifier
                  baseline; role descriptions of the v1.0 direct-LLM baselines)
@@ -135,6 +135,7 @@ def main() -> None:
     ap.add_argument("--model-name", default=None, help="override lora.model_name (smoke tests)")
     ap.add_argument("--limit", type=int, default=None, help="subsample dev and test (smoke tests)")
     ap.add_argument("--external", action="store_true")
+    ap.add_argument("--seed", type=int, default=None, help="override lora.seed")
     ap.add_argument("--set", default="email3r", choices=["email3r", "e12"])
     ap.add_argument("--e12-run-dir", default=None)
     ap.add_argument("--e12-labels", default=None)
@@ -148,6 +149,8 @@ def main() -> None:
     lc = cfg["lora"]
     if args.model_name:
         lc["model_name"] = args.model_name
+    if args.seed is not None:
+        lc["seed"] = args.seed
     assert torch.cuda.is_available(), "CUDA required"
     name = f"qwen25_7b_lora_{args.input}" if not args.model_name else f"smoke_lora_{args.input}"
     if args.set == "e12":

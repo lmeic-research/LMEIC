@@ -1,6 +1,7 @@
 """Generate the upgraded LMEIC information-diagnostics figure.
 
-Version: v1.0, 2026-06-10.
+Version: v1.1, 2026-10-28 (v1.1: panel (c) labels say increment/overlap instead of unique/shared,
+because the values are classifier-based estimates, not a partial-information decomposition).
 
 This script renders a three-panel figure for the LMEIC ESWA manuscript:
 (a) predictive information (PI) bars with bootstrap intervals,
@@ -157,9 +158,9 @@ def plot_overlap_panel(ax: plt.Axes, quantities: dict[str, dict[str, str]], h_y:
 
     bar_y, bar_h = 0.36, 0.30
     segments = [
-        (0.0, d1_unique, PALETTE["d1"], f"D1 unique\n{d1_unique:.3f}"),
-        (d1_unique, shared, PALETTE["overlap"], f"shared\n{shared:.3f}"),
-        (pi_d1, d23_unique, PALETTE["d2"], f"D2+D3\nunique\n{d23_unique:.3f}"),
+        (0.0, d1_unique, PALETTE["d1"], f"D1 increment\n{d1_unique:.3f}"),
+        (d1_unique, shared, PALETTE["overlap"], f"overlap\n{shared:.3f}"),
+        (pi_d1, d23_unique, PALETTE["d2"], f"D2+D3\n{d23_unique:.3f}"),
         (pi_joint, residual, PALETTE["light_gray"], f"residual label uncertainty\n{residual:.3f}"),
     ]
     for x0, width, colour, label in segments:
@@ -191,7 +192,7 @@ def plot_overlap_panel(ax: plt.Axes, quantities: dict[str, dict[str, str]], h_y:
     ax.set_ylim(-0.32, 1.06)
     ax.set_xlabel("Label information (bits)")
     ax.set_yticks([])
-    ax.set_title("(c) Decomposition of joint predictive information on the label-entropy scale")
+    ax.set_title("(c) Split of the estimated joint predictive information on the label-entropy scale")
     for spine in ("top", "right", "left"):
         ax.spines[spine].set_visible(False)
 

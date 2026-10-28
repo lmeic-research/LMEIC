@@ -1,6 +1,7 @@
 """
 Revised main-table numbers for EMAIL-3R (thread-grouped protocol, R2 / R3).
-Version: v1 | Date: 2026-10-27
+Version: v1.1 | Date: 2026-10-28 (v1.1: --proposed / --baselines / --tag select the systems; for pooled
+  systems (analysis_meta pooled_groups) sd_between is the SD of the group means, e.g. over co-reader seeds)
 
 Reads the systems registered in rev1_reference.yaml (five-seed rebuild variants, v1.0 stored
 baseline predictions, E11 open-weight baselines) and the paired comparisons written by
@@ -26,7 +27,10 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT))
 
 from lmeic.reference.analyse_reference import CONFIG_NAME, LABELS, load_systems, macro  # noqa: E402
+import json  # noqa: E402
+
 from lmeic.common.rev1_common import git_commit, load_config, norm_mid, source_run_dir, write_json  # noqa: E402
+from lmeic.reference.analyse_reference import pooled_systems  # noqa: E402
 from lmeic.common.data_loader import load_split  # noqa: E402
 
 BASELINES = ["v1_B00_majority", "v1_B01_tfidf_lr", "v1_B02_gpt4o_zs", "v1_B04_gpt55_zs", "v1_B06_deepseek_v4pro_zs",
@@ -55,7 +59,11 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--analysis", required=True)
+    ap.add_argument("--proposed", default=",".join(PROPOSED))
+    ap.add_argument("--baselines", default=",".join(BASELINES))
+    ap.add_argument("--tag", default="")
     args = ap.parse_args()
+    proposed, baselines = args.proposed.split(","), args.baselines.split(",")
     run_dir = Path(args.run_dir); ana = run_dir / args.analysis
     paths, cfg = load_config(CONFIG_NAME)
     cfg["_repo_root"] = paths["repo_root"]
@@ -63,32 +71,42 @@ def main() -> None:
     test_mids = [norm_mid(m) for m in te["message_id"]]
     y = te["label_final"].map({l: i for i, l in enumerate(LABELS)}).values
     systems = load_systems(run_dir, source_run_dir(paths, cfg["source_run_id"]), cfg, test_mids)
+    pooled, _ = pooled_systems(run_dir, cfg, test_mids)
+    systems.update(pooled)
+    groups = json.loads((ana / "analysis_meta.json").read_text()).get("pooled_groups", {})
     metrics = pd.read_csv(ana / "system_metrics.csv").set_index("system")
     rows = []
-    for name in BASELINES + PROPOSED:
+    for name in baselines + proposed:
         P = systems[name]
         seeds = [macro(y, P[i:i + 1]) for i in range(P.shape[0])]
         pc = per_class(y, P)
+        sizes = groups.get(name)
+        between = np.nan
+        if sizes and len(sizes) > 1:
+            edges = np.cumsum([0] + sizes)
+            between = float(np.std([np.mean(seeds[edges[g]:edges[g + 1]]) for g in range(len(sizes))]))
         rows.append({"system": name, "n_seeds": P.shape[0], "macro_f1": macro(y, P),
-                     "sd": float(np.std(seeds)) if P.shape[0] > 1 else np.nan,
+                     "sd": float(np.std(seeds)) if P.shape[0] > 1 else np.nan, "sd_between": between,
                      "f1_high": pc[0], "f1_medium": pc[1], "f1_low": pc[2],
                      "sender_unseen": metrics.loc[name, "sender_unseen"]})
     tab = pd.DataFrame(rows)
     comp = pd.read_csv(ana / "paired_comparisons.csv")
     fam = []
-    for a in PROPOSED:
-        c = comp[(comp.a == a) & comp.b.isin(BASELINES)].drop_duplicates(["a", "b"]).copy()
+    for a in proposed:
+        c = comp[(comp.a == a) & comp.b.isin(baselines)].drop_duplicates(["a", "b"]).copy()
         c["p_holm"] = holm(c["p_two_sided"].to_numpy()); c["family"] = a
         fam.append(c)
     fam = pd.concat(fam)
-    extra = comp[(comp.a == "R3_v3_grouped_full") & (comp.b == "R2_v3_grouped_explicit")]
-    out = ana / "main_table"
+    extra = comp[(comp.a == proposed[-1]) & (comp.b == proposed[0])]
+    out = ana / ("main_table" + (f"_{args.tag}" if args.tag else ""))
     out.mkdir(exist_ok=True)
     tab.to_csv(out / "system_rows.csv", index=False)
     fam.to_csv(out / "comparisons_holm.csv", index=False)
     write_json(out / "meta.json", {"analysis": args.analysis, "n_test": int(len(y)),
                                    "family": "per proposed system, all main-text baselines; Holm",
-                                   "r3_minus_r2": extra.iloc[0].to_dict(), "git_commit": git_commit(_REPO_ROOT)})
+                                   "proposed": proposed, "baselines": baselines,
+                                   "last_minus_first_proposed": extra.iloc[0].to_dict() if len(extra) else None,
+                                   "git_commit": git_commit(_REPO_ROOT)})
     pd.set_option("display.width", 200)
     print(tab.round(4).to_string(index=False))
     f = fam.copy()

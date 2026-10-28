@@ -2,6 +2,8 @@
 Feature assembly for the reference rebuild.
 Version: v1.2 | Date: 2026-10-22
 v1.1: the role-conditional filter no longer drops the D1 field role_relevance.
+v1.3 (2026-10-28): group flag no_role_d1 drops the D1 field role_relevance and the interaction
+      inter_conseq_role (E23: ablation without recipient-role information).
 v1.2: groups d2meta / d2hist (D2 header metadata vs organisational history) and the E7
 context blocks d2x / d2x_noprior / d3x read from features.context_rich_dir.
 
@@ -159,6 +161,8 @@ def build(cfg: dict[str, Any], repo_root: Path, d2d3_version: str, groups: set[s
             rm += [c for c in feats[s].columns if c.startswith("inter_")]
         if "role_cond" not in groups:
             rm += [c for c in feats[s].columns if c.startswith(ROLE_COND_PREFIXES)]
+        if "no_role_d1" in groups:
+            rm += [c for c in ("role_relevance", "inter_conseq_role") if c in feats[s].columns]
         if rm:
             feats[s] = feats[s].drop(columns=rm)
 

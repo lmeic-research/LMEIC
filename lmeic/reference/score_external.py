@@ -1,6 +1,8 @@
 """
 Score the revision-1 external sets (cross-role, fresh hold-out, E1b) with a reference variant.
-Version: v1 | Date: 2026-10-22
+Version: v1.1 | Date: 2026-10-28
+  v1.1: --coreader-dir (co-reader bank entry with probs.parquet and probs_external.parquet)
+        and --suffix (variant directory <variant><suffix>), for E21 multi-seed scoring.
 
 Fits the variant's model on the development pool with its tuned parameters (five
 seeds) and predicts the EMAIL-3R test split together with every external set. The
@@ -42,6 +44,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--variant", required=True)
+    ap.add_argument("--coreader-dir", default=None)
+    ap.add_argument("--suffix", default="")
     args = ap.parse_args()
     run_dir = Path(args.run_dir)
     paths, cfg = load_config(CONFIG_NAME)
@@ -50,10 +54,14 @@ def main() -> None:
     assert v["d2d3"] == "v3", "external sets carry v3 D2/D3 features only"
     groups = set(v["groups"])
     es = cfg["external_sets"]
-    params = json.loads((run_dir / v["name"] / "params.json").read_text())
+    vname = v["name"] + args.suffix
+    params = json.loads((run_dir / vname / "params.json").read_text())
 
-    probs_dev = pd.read_parquet(run_dir / "coreader_probs_grouped.parquet") if "coreader" in groups else None
-    probs_ext = pd.read_parquet(run_dir / "coreader_probs_external.parquet") if "coreader" in groups else None
+    cdir = Path(args.coreader_dir) if args.coreader_dir else None
+    probs_dev = (pd.read_parquet(cdir / "probs.parquet" if cdir else run_dir / "coreader_probs_grouped.parquet")
+                 if "coreader" in groups else None)
+    probs_ext = (pd.read_parquet(cdir / "probs_external.parquet" if cdir else run_dir / "coreader_probs_external.parquet")
+                 if "coreader" in groups else None)
     feats, y, meta = F.build(cfg, repo, "v3", groups, probs_dev)
     X, yy, g, Xt = F.pool(feats, y, meta)
     cols = list(feats["train"].columns)
@@ -84,17 +92,17 @@ def main() -> None:
             rows.append({"seed": s, "set": set_name, "id": iid, "pred": LABELS[int(pred)],
                          "p_high": float(pr[0]), "p_med": float(pr[1]), "p_low": float(pr[2])})
     out = pd.DataFrame(rows)
-    out_dir = run_dir / v["name"] / f"external_{time.strftime('%Y%m%d_%H%M%S')}"
+    out_dir = run_dir / vname / f"external_{time.strftime('%Y%m%d_%H%M%S')}"
     out_dir.mkdir()
     out.to_parquet(out_dir / "external_predictions_all_seeds.parquet", index=False)
 
-    stored = pd.read_parquet(run_dir / v["name"] / "test_predictions_all_seeds.parquet")
+    stored = pd.read_parquet(run_dir / vname / "test_predictions_all_seeds.parquet")
     t = out[out["set"] == "test"].merge(stored[["seed", "message_id", "pred"]],
                                         left_on=["seed", "id"], right_on=["seed", "message_id"],
                                         suffixes=("", "_stored"))
     agree = float((t["pred"] == t["pred_stored"]).mean())
     write_json(out_dir / "external_meta.json", {
-        "variant": v, "n_external": ext_meta, "test_agreement_with_stored_predictions": agree,
+        "variant": v, "coreader_dir": str(cdir) if cdir else None, "n_external": ext_meta, "test_agreement_with_stored_predictions": agree,
         "d1_dir": es["d1_dir"], "d2d3_dir": es["d2d3_dir"], "git_commit": git_commit(repo)})
     logger.info("test agreement with stored predictions: %.4f -> %s", agree, out_dir)
 

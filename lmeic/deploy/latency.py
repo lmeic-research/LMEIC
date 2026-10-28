@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 E13: per-email latency, throughput and cost of the LMEIC inference path.
-Version: v1.1 | Date: 2026-10-23 (v1.1: masked extraction listed separately, relative source paths)
+Version: v1.2 | Date: 2026-10-28 (v1.1: masked extraction listed separately, relative source paths;
+  v1.2: --coreader-dir supplies co-reader scores so variants with a co-reader can be timed, E27)
 
 Timed on the EMAIL-3R test split (run on an otherwise idle GPU):
   d2d3       pre-t D2/D3 features for one email from the history index (CPU)
@@ -113,11 +114,12 @@ def time_coreader(n: int) -> list[dict]:
     return out
 
 
-def time_stacking(run_dir: Path, variant: str, n: int) -> list[dict]:
+def time_stacking(run_dir: Path, variant: str, n: int, coreader_dir: Path | None = None) -> list[dict]:
     paths, rcfg = load_config("rev1_reference.yaml")
-    v = next(x for x in rcfg["variants"] if x["name"] == variant)
+    v = next(x for x in rcfg["variants"] if x["name"] == variant or variant.startswith(x["name"] + "_cr"))
     params = json.loads((run_dir / variant / "params.json").read_text())
-    feats, y, meta = F.build(rcfg, Path(paths["repo_root"]), v["d2d3"], set(v["groups"]))
+    probs = pd.read_parquet(coreader_dir / "probs.parquet") if coreader_dir else None
+    feats, y, meta = F.build(rcfg, Path(paths["repo_root"]), v["d2d3"], set(v["groups"]), probs)
     X, yy, g, Xt = F.pool(feats, y, meta)
     xm = M._xgb(params["xgb"], 42, prob=True).fit(X, yy, sample_weight=M.sample_weights(yy))
     lm = M._lgbm(params["lgbm"], 42).fit(X, yy, sample_weight=M.sample_weights(yy))
@@ -162,12 +164,13 @@ def main() -> None:
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--variant", default="R2_v3_grouped_explicit")
     ap.add_argument("--n", type=int, default=500)
+    ap.add_argument("--coreader-dir", default=None, help="co-reader bank entry, for variants with a co-reader")
     args = ap.parse_args()
     paths, cfg = load_config("rev1_e13_deploy.yaml")
     run_dir = Path(args.run_dir)
     out = run_dir / f"e13_latency_{time.strftime('%Y%m%d_%H%M%S')}"
     out.mkdir()
-    rows = [time_d2d3(args.n), time_text(args.n), *time_coreader(args.n), *time_stacking(run_dir, args.variant, args.n),
+    rows = [time_d2d3(args.n), time_text(args.n), *time_coreader(args.n), *time_stacking(run_dir, args.variant, args.n, Path(args.coreader_dir) if args.coreader_dir else None),
             *extraction_rows(paths)]
     tab = pd.DataFrame(rows)
     tab.to_csv(out / "latency.csv", index=False)

@@ -43,6 +43,8 @@ coreader_bank:
     mdeberta_v3_base: {model_name: microsoft/mdeberta-v3-base, lr: 2.0e-5, batch_size: 16, seeds: [42]}
     bge_m3:          {model_name: BAAI/bge-m3, lr: 1.0e-5, batch_size: 16, seeds: [42]}
     chinese_roberta: {model_name: hfl/chinese-roberta-wwm-ext, lr: 2.0e-5, batch_size: 16, seeds: [42]}
+    # E21 (2026-10-28): headline recipe (fp32), five seeds; full-pool model also scores the external sets
+    xlmr_base_fp32:  {model_name: xlm-roberta-base, lr: 2.0e-5, batch_size: 16, bf16: false, seeds: [42, 123, 456, 789, 2026]}
 
 # Each variant changes one factor relative to the previous row.
 external_sets:                       # instances outside EMAIL-3R scored by models fitted on train+val
@@ -156,6 +158,42 @@ analysis:
     - [R2_v3_grouped_explicit, E11_zs_qwen25_7b]
   n_boot: 5000
   boot_seed: 20261022
+  # E21-E24 (2026-10-28): multi-run systems. variant_glob stacks <run dir>/<glob>/test_predictions_all_seeds;
+  # probs_glob stacks argmax of plm_p_* in parquet files (test split). Groups = co-reader seeds or LoRA seeds.
+  pooled_systems:
+    E21_full_5cr: {kind: variant_glob, glob: "E21_full_cr*", min_groups: 5}
+    E21_full_minus_d2_5cr: {kind: variant_glob, glob: "E21_full_minus_d2_cr*", min_groups: 5}
+    E21_full_minus_d3_5cr: {kind: variant_glob, glob: "E21_full_minus_d3_cr*", min_groups: 5}
+    E21_full_minus_d2d3_5cr: {kind: variant_glob, glob: "E21_full_minus_d2d3_cr*", min_groups: 5}
+    E21_full_no_role_5cr: {kind: variant_glob, glob: "E21_full_no_role_cr*", min_groups: 5}
+    E22_lora_5seed: {kind: probs_glob, root: private/runs/rev1_e22_lora_multiseed_20261028_102628, glob: "qwen25_7b_lora_role_s*/test_probs.parquet", min_groups: 5}
+    E21_xlmr_5seed: {kind: probs_glob, root: private/runs/rev1_reference_20261022_191130/coreader_bank, glob: "xlmr_base_fp32_s*/probs.parquet", min_groups: 5}
+  pooled_comparisons:
+    - [E21_full_5cr, v1_B00_majority]
+    - [E21_full_5cr, v1_B01_tfidf_lr]
+    - [E21_full_5cr, v1_B02_gpt4o_zs]
+    - [E21_full_5cr, v1_B04_gpt55_zs]
+    - [E21_full_5cr, v1_B06_deepseek_v4pro_zs]
+    - [E21_full_5cr, v1_B07_gpt55_fewshot]
+    - [E21_full_5cr, v1_B08_gpt55_context_enriched]
+    - [E21_full_5cr, E11_zs_qwen25_7b]
+    - [E21_full_5cr, E11_zs_qwen3_8b]
+    - [E21_full_5cr, R4_B11_v3_grouped]
+    - [E21_full_5cr, R5_B12_grouped]
+    - [E21_full_5cr, E21_xlmr_5seed]
+    - [E21_full_5cr, v1_B10_xlmr_cls_xgb]
+    - [E21_full_5cr, E22_lora_5seed]
+    - [R2_v3_grouped_explicit, E21_xlmr_5seed]
+    - [R2_v3_grouped_explicit, E22_lora_5seed]
+    - [E21_full_5cr, R2_v3_grouped_explicit]
+    - [E21_full_5cr, E24_full_minus_coreader_R3params]
+    - [E21_full_5cr, E21_full_minus_d2_5cr]
+    - [E21_full_5cr, E21_full_minus_d3_5cr]
+    - [E21_full_5cr, E21_full_minus_d2d3_5cr]
+    - [E21_full_5cr, E21_full_no_role_5cr]
+    - [R2_v3_grouped_explicit, E23_explicit_no_role]
+    - [E21_full_5cr, R3_v3_grouped_full]
+    - [E22_lora_5seed, E11_lora_qwen25_role]
 
 variants:
   - name: R0_v2_original_storedparams
@@ -454,4 +492,51 @@ variants:
     d1_extra:
       - qwen3=private/runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
       - qwen25=private/runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
+    params_from: R3_v3_grouped_full
+  # E21 (2026-10-28): LMEIC-full and its context ablations, run once per co-reader seed with
+  # run_reference --coreader-dir <coreader_bank/xlmr_base_fp32_s<seed>> --suffix _cr<seed>; R3 parameters.
+  - name: E21_full
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond, coreader]
+    arch: stacking
+    params_from: R3_v3_grouped_full
+  - name: E21_full_minus_d2
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d3, text, interactions, role_cond, coreader]
+    arch: stacking
+    params_from: R3_v3_grouped_full
+  - name: E21_full_minus_d3
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, text, interactions, role_cond, coreader]
+    arch: stacking
+    params_from: R3_v3_grouped_full
+  - name: E21_full_minus_d2d3
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, text, interactions, role_cond, coreader]
+    arch: stacking
+    params_from: R3_v3_grouped_full
+  - name: E21_full_no_role
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, text, interactions, no_role_d1, coreader]
+    arch: stacking
+    params_from: R3_v3_grouped_full
+  # E23 (2026-10-28): explicit system without any recipient-role feature (no D3, no role-conditional
+  # products, no D1 role_relevance or inter_conseq_role); R2 parameters.
+  - name: E23_explicit_no_role
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, text, interactions, no_role_d1]
+    arch: stacking
+    params_from: R2_v3_grouped_explicit
+  # E24 (2026-10-28): R3 feature set without the co-reader, R3 parameters (co-reader gain at fixed parameters).
+  - name: E24_full_minus_coreader_R3params
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
     params_from: R3_v3_grouped_full
