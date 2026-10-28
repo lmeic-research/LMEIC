@@ -2,8 +2,8 @@
 """
 E18: D1 descriptor extraction for the Apache Jira issues with a local vLLM model.
 Version: v1.1 | Date: 2026-10-24
-v1.1: reads the sample from processed/sample_<n>_issue_ids.txt (written with run_baselines.load +
-      stratified_sample) so it runs in the vLLM environment, which has no scikit-learn.
+v1.1: reads the sample from the shipped data/jira/sample_issue_ids.txt (the stratified sample drawn
+      with run_baselines.load + stratified_sample) so it runs in the vLLM environment, which has no scikit-learn.
 
 Same descriptor schema, one-shot example and coercion as the EMAIL-3R extractor
 (extract_d1_v2 / d1_extract_local); only the domain framing and the role line change:
@@ -14,7 +14,7 @@ The model never sees the priority field. Resumable by row index.
 
 Usage (GPU, vLLM environment):
   python -m benchmarks.jira.extract_d1 --model qwen25_7b \
-      --processed datasets/public/apache_jira/processed [--limit N] [--sample-ids sample_30000_issue_ids.txt]
+      --processed datasets/public/apache_jira/processed [--limit N] [--sample-ids sample_issue_ids.txt]
 """
 
 from __future__ import annotations
@@ -37,10 +37,12 @@ from lmeic.features.extract_d1 import (  # noqa: E402
     BODY_MAX_CHARS, ONE_SHOT_ASSISTANT, ONE_SHOT_USER, REQUIRED_FIELDS, coerce,
 )
 
+from benchmarks.jira.sample_ids import DEFAULT_SAMPLE_IDS, read_sample_ids  # noqa: E402
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = _REPO_ROOT / "email3r" / "configs" / "experiments" / "rev1_d1_local.yaml"
+CONFIG_PATH = _REPO_ROOT / "configs" / "rev1_d1_local.yaml"
 
 SYSTEM_PROMPT = """You are a text feature extraction assistant for a software issue-tracking system. \
 Given an issue report and the component or team that owns it, you extract OBJECTIVE, structured semantic features.
@@ -85,7 +87,7 @@ def main() -> None:
     ap.add_argument("--model", required=True)
     ap.add_argument("--processed", default="datasets/public/apache_jira/processed")
     ap.add_argument("--out-dir", default="datasets/public/apache_jira/d1")
-    ap.add_argument("--sample-ids", default="sample_30000_issue_ids.txt")
+    ap.add_argument("--sample-ids", default=DEFAULT_SAMPLE_IDS)
     ap.add_argument("--limit", type=int, default=None)
     args = ap.parse_args()
 
@@ -94,7 +96,7 @@ def main() -> None:
     mc = cfg["models"][args.model]
     proc = Path(args.processed)
     df = pd.read_parquet(proc / "issues.parquet")
-    ids = [l.strip() for l in (proc / args.sample_ids).read_text().splitlines() if l.strip()]
+    ids = read_sample_ids(proc, args.sample_ids)
     df["issue_id"] = df["issue_id"].astype(str)
     df = df.set_index("issue_id").loc[ids].reset_index()      # keeps the sample's time order
     if args.limit:

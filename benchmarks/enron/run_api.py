@@ -80,7 +80,6 @@ def main() -> None:
     if args.task == "d1_local":
         run_local_d1(ecfg, paths, out_dir, args.model, args.limit)
     elif args.task == "labels":
-        sys.path.insert(0, str(_REPO_ROOT / "email3r" / "code" / "annotation"))
         from lmeic.labelling import agent_label as al
         patch_labelling(ecfg)
         asyncio.run(al.run(SET_NAME, out_dir, args.limit))

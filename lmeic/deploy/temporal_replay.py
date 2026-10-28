@@ -38,7 +38,7 @@ from lmeic.reference import features as F  # noqa: E402
 from lmeic.reference import models as M  # noqa: E402
 from lmeic.common.rev1_common import git_commit, load_config, write_json  # noqa: E402
 from lmeic.common.data_loader import load_splits  # noqa: E402
-from lmeic.common.tide_features import build_text_features  # noqa: E402
+from lmeic.common.lmeic_features import build_text_features  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)

@@ -3,7 +3,7 @@
 E18e: Apache Jira — fine-tuned XLM-R text-only baseline (GPU).
 Version: v1 | Date: 2026-10-26
 
-Same rows and time split as run_d1_fusion / run_id_ablation (sample_30000_issue_ids.txt, valid D1
+Same rows and time split as run_d1_fusion / run_id_ablation (sample_issue_ids.txt, valid D1
 record; train created < 2022, test >= 2023). Input: summary + description. Hyper-parameters are the
 reference co-reader settings (rev1_reference.yaml: coreader: xlm-roberta-base, max_len 256, 4 epochs,
 lr 2e-5, class-weighted cross-entropy). Five seeds per setting; S2 uses the classes present (High/Low),
@@ -35,6 +35,8 @@ from benchmarks.jira.run_d1_fusion import d1_frame  # noqa: E402
 from lmeic.reference.coreader import predict, train  # noqa: E402
 from lmeic.common.rev1_common import git_commit, load_config, write_json  # noqa: E402
 
+from benchmarks.jira.sample_ids import DEFAULT_SAMPLE_IDS, read_sample_ids  # noqa: E402
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
@@ -42,7 +44,7 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--processed", default="datasets/public/apache_jira/processed")
-    ap.add_argument("--sample-ids", default="sample_30000_issue_ids.txt")
+    ap.add_argument("--sample-ids", default=DEFAULT_SAMPLE_IDS)
     ap.add_argument("--d1", default="datasets/public/apache_jira/d1/d1_jira_qwen25_7b.jsonl")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
@@ -52,7 +54,7 @@ def main() -> None:
     cc = rcfg["coreader"]
     df = load(proc)
     df["issue_id"] = df["issue_id"].astype(str)
-    ids = [l.strip() for l in (proc / args.sample_ids).read_text().splitlines() if l.strip()]
+    ids = read_sample_ids(proc, args.sample_ids)
     df = df.set_index("issue_id").loc[ids].reset_index()
     df = df[df["issue_id"].isin(set(d1_frame(Path(args.d1))["issue_id"]))].sort_values("created").reset_index(drop=True)
     tok = AutoTokenizer.from_pretrained(cc["model_name"])

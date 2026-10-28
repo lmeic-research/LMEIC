@@ -3,7 +3,7 @@
 E18d: Apache Jira — zero-shot priority classification with a local open-weight LLM (vLLM).
 Version: v1 | Date: 2026-10-25
 
-Scores the E18 test rows (sample_30000_issue_ids.txt, valid D1 record, created >= 2023-01-01; the
+Scores the E18 test rows (sample_issue_ids.txt, valid D1 record, created >= 2023-01-01; the
 same rows as run_d1_fusion / run_id_ablation). Decoding is constrained to the label names:
   S1  High / Medium / Low on all test rows (Blocker+Critical=High, Major=Medium, Minor+Trivial=Low)
   S2  High / Low on test rows whose creation priority is not Major
@@ -29,10 +29,12 @@ import pandas as pd
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT))
 
+from benchmarks.jira.sample_ids import DEFAULT_SAMPLE_IDS, read_sample_ids  # noqa: E402
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = _REPO_ROOT / "email3r" / "configs" / "experiments" / "rev1_d1_local.yaml"
+CONFIG_PATH = _REPO_ROOT / "configs" / "rev1_d1_local.yaml"
 MAP5 = {"Blocker": "High", "Critical": "High", "Major": "Medium", "Minor": "Low", "Trivial": "Low"}
 
 PROMPT = """You are triaging a new issue in a software project's issue tracker for the {component} component.
@@ -64,7 +66,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="qwen25_7b")
     ap.add_argument("--processed", default="datasets/public/apache_jira/processed")
-    ap.add_argument("--sample-ids", default="sample_30000_issue_ids.txt")
+    ap.add_argument("--sample-ids", default=DEFAULT_SAMPLE_IDS)
     ap.add_argument("--d1", default="datasets/public/apache_jira/d1/d1_jira_qwen25_7b.jsonl")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
@@ -76,7 +78,7 @@ def main() -> None:
     proc = Path(args.processed)
     df = pd.read_parquet(proc / "issues.parquet")
     df["issue_id"] = df["issue_id"].astype(str)
-    ids = [l.strip() for l in (proc / args.sample_ids).read_text().splitlines() if l.strip()]
+    ids = read_sample_ids(proc, args.sample_ids)
     d1_ids = {json.loads(l)["issue_id"] for l in Path(args.d1).read_text().splitlines() if l.strip()}
     df = df.set_index("issue_id").loc[ids].reset_index()
     df = df[df["issue_id"].isin(d1_ids)]

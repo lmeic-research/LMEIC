@@ -1,6 +1,6 @@
 # Agent labelling for revision-1 evaluation sets.
 # Prompts, consensus rule (2/3 majority), single debate round and adjudication are
-# reused unchanged from email3r/code/annotation (v1.0 pipeline). Only the model
+# reused unchanged from the v1.0 annotation pipeline. Only the model
 # snapshots and endpoints differ; the v1.0 agent C (claude-3-5-sonnet-20241022)
 # has no available channel and is replaced by claude-sonnet-4.5 (DJ D043).
 
@@ -34,7 +34,7 @@ agents:
 # agent uses OpenRouter with the same snapshots. Votes record the serving provider.
 adjudicator: {model: openai/gpt-4o-2024-11-20, endpoint: openrouter, provider_order: [OpenAI], json_mode: true}
 
-human_package_key: datasets/email3r_runs/rev1_eval_sets_20261022_161427/human_annotation/item_index.jsonl
+human_package_key: private/runs/rev1_eval_sets_20261022_161427/human_annotation/item_index.jsonl
 
 sets:
   core_test:                         # v1.0 test emails in the human study; panel-shift check against v1.0 labels
@@ -44,17 +44,17 @@ sets:
     id_field: message_id
   cross_role:
     kind: jsonl
-    path: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/cross_role_instances.jsonl.gz
+    path: private/runs/rev1_eval_sets_pii06c_20261022_193808/cross_role_instances.jsonl.gz
     id_field: instance_id
   fresh_holdout:
     kind: jsonl
-    path: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/fresh_holdout_instances.jsonl.gz
+    path: private/runs/rev1_eval_sets_pii06c_20261022_193808/fresh_holdout_instances.jsonl.gz
     id_field: instance_id
   e1b:
     kind: jsonl
-    path: datasets/email3r_runs/rev1_e1b_manager_20261022_194017/e1b_instances.jsonl.gz
+    path: private/runs/rev1_e1b_manager_20261022_194017/e1b_instances.jsonl.gz
     id_field: instance_id
   e12_enron:                         # run through e12_enron.run_api (Enron role cards)
     kind: jsonl
-    path: datasets/email3r_runs/rev1_e12_enron_20261022_235509/instances.jsonl.gz
+    path: private/runs/rev1_e12_enron_20261022_235509/instances.jsonl.gz
     id_field: instance_id

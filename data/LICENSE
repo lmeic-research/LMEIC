@@ -1,8 +1,45 @@
-The derived benchmark data in this directory (instance lists, splits, agent labels, LLM
-descriptors and context features) are licensed under the Creative Commons Attribution 4.0
-International licence (CC BY 4.0): https://creativecommons.org/licenses/by/4.0/
+Derived benchmark data in this directory
+=========================================
 
-They are derived from the Enron email corpus (research use, https://www.cs.cmu.edu/~enron/)
-and from the Apache Jira issue-tracking dataset of Diamantopoulos, Nastos and Symeonidis
-(MSR 2023; CC BY 4.0, https://doi.org/10.5281/zenodo.14253918), which remain under their
-original terms.
+The derived benchmark data in this directory (instance lists, splits, labels, LLM descriptors
+and context features for the Enron and Apache Jira benchmarks) are licensed under the Creative
+Commons Attribution 4.0 International licence (CC BY 4.0).
+
+  Copyright (c) 2026 Xingyun Yan, Jie Hu and co-authors.
+  Licence deed and full legal code: https://creativecommons.org/licenses/by/4.0/
+  (legal code: https://creativecommons.org/licenses/by/4.0/legalcode)
+
+You are free to share (copy and redistribute the material in any medium or format) and adapt
+(remix, transform and build upon the material) for any purpose, even commercially, under these
+terms: you must give appropriate credit, provide a link to the licence, and indicate if changes
+were made. You may do so in any reasonable manner, but not in any way that suggests the licensor
+endorses you or your use. You may not apply legal terms or technological measures that legally
+restrict others from doing anything the licence permits. The material is provided "as is",
+without warranties of any kind; see the legal code for the full terms.
+
+Suggested attribution
+---------------------
+"LMEIC derived benchmark data" by Yan, Hu and co-authors, from
+https://github.com/lmeic-research/LMEIC, licensed under CC BY 4.0
+(https://creativecommons.org/licenses/by/4.0/). Please also cite the paper (see CITATION.cff).
+
+Upstream sources and attribution
+--------------------------------
+Enron benchmark (data/enron/)
+  Derived from the Enron email corpus (Klimt and Yang, 2004; CMU distribution,
+  https://www.cs.cmu.edu/~enron/). The corpus is not redistributed here and remains under its
+  original terms (research use). The data in data/enron/ contain identifiers, labels, features
+  and descriptors derived from it, and no email text, subjects or addresses.
+
+Apache Jira benchmark (data/jira/)
+  Derived from the Apache Jira issue-tracking dataset of Diamantopoulos, Nastos and Symeonidis
+  (MSR 2023), Zenodo, https://doi.org/10.5281/zenodo.14253918,
+  licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
+  Changes: we selected 29,997 issues, mapped the creation-time priority to three classes,
+  assigned a time-based split, computed context features, and extracted LLM descriptors from the
+  issue text. Issue text is not redistributed; rebuild it from the Zenodo dump. The upstream
+  attribution and licence of the original dataset apply to everything derived from it.
+
+Code
+----
+The code in this repository is licensed separately under the MIT licence (../LICENSE).

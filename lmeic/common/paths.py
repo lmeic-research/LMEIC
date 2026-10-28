@@ -1,9 +1,9 @@
 """
-Path resolver for EMAIL-3R pipeline.
+Path resolver for the LMEIC pipeline.
 Version: v1 | Date: 2026-05-26
 
-Loads configs/env/paths.yaml, resolves ${var} substitutions, and exposes
-a typed accessor. All scripts under email3r/code/ MUST use this module
+Loads configs/paths.yaml, resolves ${var} substitutions, and exposes
+a typed accessor. All scripts SHOULD use this module
 instead of hardcoding any absolute path.
 """
 
@@ -46,11 +46,11 @@ def _substitute(value: Any, registry: dict[str, str]) -> Any:
 def load_paths(config_path: Path | str | None = None) -> dict[str, Any]:
     """Load and resolve paths.yaml."""
     if config_path is None:
-        env_override = os.environ.get("EMAIL3R_PATHS_YAML")
+        env_override = os.environ.get("LMEIC_PATHS_YAML")
         if env_override:
             config_path = Path(env_override)
         else:
-            config_path = _REPO_ROOT_DEFAULT / "email3r" / "configs" / "env" / "paths.yaml"
+            config_path = _REPO_ROOT_DEFAULT / "configs" / "paths.yaml"
     config_path = Path(config_path).resolve()
 
     with config_path.open("r", encoding="utf-8") as f:

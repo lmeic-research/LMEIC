@@ -51,8 +51,8 @@ logger = logging.getLogger("e16")
 
 LABELS = ["High", "Medium", "Low"]
 LAB = {l: i for i, l in enumerate(LABELS)}
-REF = "datasets/email3r_runs/rev1_reference_20261022_191130"
-VOTES = "datasets/email3r_runs/run_20260526_123858/phase1_annotation/annotations_full.jsonl"
+REF = "private/runs/rev1_reference_20261022_191130"
+VOTES = "private/runs/run_20260526_123858/phase1_annotation/annotations_full.jsonl"
 N_BOOT = 2000
 BOOT_SEED = 20261023
 
@@ -63,7 +63,7 @@ SYSTEMS = {
     "R3_full": ("seeds", f"{REF}/R3_v3_grouped_full/test_predictions_all_seeds.parquet"),
     "E14_both_explicit": ("seeds", f"{REF}/E14_both_extractors_explicit_R2params/test_predictions_all_seeds.parquet"),
     "E14_both_full": ("seeds", f"{REF}/E14_both_extractors_full_R3params/test_predictions_all_seeds.parquet"),
-    "E11_lora_qwen25_role": ("plm", "datasets/email3r_runs/rev1_e11_llm_baselines_20261023/qwen25_7b_lora_role_s42/test_probs.parquet"),
+    "E11_lora_qwen25_role": ("plm", "private/runs/rev1_e11_llm_baselines_20261023/qwen25_7b_lora_role_s42/test_probs.parquet"),
     "text_xlmr_base_s42": ("plm", f"{REF}/coreader_bank/xlmr_base_s42/probs.parquet"),
     "text_xlmr_large_s42": ("plm", f"{REF}/coreader_bank/xlmr_large_s42/probs.parquet"),
     "text_lora_qwen25_s42": ("plm", f"{REF}/coreader_bank/qwen25_7b_lora_text_s42/probs.parquet"),

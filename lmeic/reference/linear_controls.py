@@ -108,7 +108,7 @@ def main() -> None:
 
     systems["R5_d1_xgb"] = aligned(pd.read_parquet(run_dir / "R5_B12_grouped" / "test_predictions_all_seeds.parquet"), mids)
     systems["R2_explicit"] = aligned(pd.read_parquet(run_dir / "R2_v3_grouped_explicit" / "test_predictions_all_seeds.parquet"), mids)
-    b01 = pd.DataFrame(read_jsonl(src_dir / "phase4_experiments/baselines/B01_tfidf_lr/predictions.jsonl"))
+    b01 = pd.DataFrame(read_jsonl(src_dir / "v1_experiments/baselines/B01_tfidf_lr/predictions.jsonl"))
     systems["B01_tfidf_lr"] = aligned(b01, mids)
 
     ac = cfg["analysis"]

@@ -2,8 +2,6 @@
 """
 E20: deployment cost of LMEIC versus a LoRA-tuned 7B classifier (same GPU, measured idle).
 
-Experiment card: 20260617-IJMLC-submission/20261021第一次大修/04_补充实验记录/E19_E20_实验卡_20261026.md
-
 Measured here:
   lora_infer_b1 / _b16   Qwen2.5-7B + LoRA sequence classifier (E11 settings, max_len 512, bf16),
                          per-email latency and throughput on n test emails; adapter weights are
@@ -42,7 +40,7 @@ from lmeic.common.data_loader import LABEL_MAP, load_split  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("e20")
-REF = _REPO_ROOT / "datasets/email3r_runs/rev1_reference_20261022_191130"
+REF = _REPO_ROOT / "private/runs/rev1_reference_20261022_191130"
 E13_LATENCY = REF / "e13_latency_20261023_200830/summary.json"
 
 
@@ -142,7 +140,7 @@ def main() -> None:
     e13 = json.loads(E13_LATENCY.read_text())
     out = REF / f"e20_deploy_vs_lora_{time.strftime('%Y%m%d_%H%M%S')}"
     out.mkdir()
-    write_json(out / "summary.json", {"card": "04_补充实验记录/E19_E20_实验卡_20261026.md", "rows": rows,
+    write_json(out / "summary.json", {"experiment": "E20", "rows": rows,
                                       "e13_latency_rows": e13["rows"], "gpu": torch.cuda.get_device_name(0),
                                       "lora_config": lc, "git_commit": git_commit(_REPO_ROOT)})
     logger.info("saved %s", out)

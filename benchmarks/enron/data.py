@@ -8,7 +8,7 @@ Feature groups mirror the EMAIL-3R reference rebuild:
   text        word/char TF-IDF + SVD (60), fitted on the development pool
   d2          header metadata and pre-t mailbox history (d2_*)
   d3          role one-hot, role-statement similarity, cross-fitted mined role n-grams (d3_*)
-  interactions, role_cond   products built as in run_tide_v9.build_interactions (v2) with the
+  interactions, role_cond   products built as in lmeic_features.build_interactions (v2) with the
               Enron roles; a product is formed only when all of its factors are in the model
   coreader    XLM-R probabilities (plm_p_*)
 """
@@ -86,7 +86,7 @@ def mined_features(df: pd.DataFrame, mcfg: dict) -> pd.DataFrame:
 
 
 def products(X: pd.DataFrame, roles: np.ndarray, groups: set[str]) -> pd.DataFrame:
-    """Interaction and role-conditional products of run_tide_v9.build_interactions (v2)."""
+    """Interaction and role-conditional products of lmeic_features.build_interactions (v2)."""
     P = {}
     has = X.columns.__contains__
     if "interactions" in groups:
@@ -113,7 +113,7 @@ def products(X: pd.DataFrame, roles: np.ndarray, groups: set[str]) -> pd.DataFra
 def text_features(df: pd.DataFrame) -> pd.DataFrame:
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-    from lmeic.common.tide_features import build_text_features
+    from lmeic.common.lmeic_features import build_text_features
     text = (df["subject"].fillna("") + "\n" + df["latest_text"].fillna("")).values
     dev, te = (df["split"] == "dev").values, (df["split"] == "test").values
     tr, _, tt = build_text_features(text[dev], text[dev][:1], text[te])

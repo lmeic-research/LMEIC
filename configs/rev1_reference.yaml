@@ -5,15 +5,15 @@ source_run_id: run_20260526_123858
 output_prefix: rev1_reference
 
 features:
-  d1_v2_relpath: tide_features_v2/d1_features_v2.jsonl
-  d2d3_v2_relpath: tide_features_v2/d2d3_features_v2.parquet
-  d2d3_v3_path: datasets/email3r_runs/rev1_features_d2d3_v3_20261022_190835/d2d3_features_v3.parquet
-  context_rich_dir: datasets/email3r_runs/rev1_context_rich_20261022_232836   # E7 (d2x_*, d3x_*)
+  d1_v2_relpath: lmeic_features_v2/d1_features_v2.jsonl
+  d2d3_v2_relpath: lmeic_features_v2/d2d3_features_v2.parquet
+  d2d3_v3_path: private/runs/rev1_features_d2d3_v3_20261022_190835/d2d3_features_v3.parquet
+  context_rich_dir: private/runs/rev1_context_rich_20261022_232836   # E7 (d2x_*, d3x_*)
 
 # v1.0 artefacts used for the reproduction check and for reusing test-time co-reader scores.
 v1_artefacts:
-  tide_v9_config: phase4_experiments/tide/TIDE_v9_d1v2/config.json
-  plm_probs: phase4_experiments/_models/plm_probs.parquet
+  v1_config: v1_experiments/lmeic/LMEIC_v9_d1v2/config.json
+  plm_probs: v1_experiments/_models/plm_probs.parquet
 
 seeds: [42, 123, 456, 789, 2026]
 n_folds: 5
@@ -46,35 +46,35 @@ coreader_bank:
 
 # Each variant changes one factor relative to the previous row.
 external_sets:                       # instances outside EMAIL-3R scored by models fitted on train+val
-  d1_dir: datasets/email3r_runs/rev1_d1_gpt4o_20241120_20261022_192314
-  d2d3_dir: datasets/email3r_runs/rev1_newset_features_d2d3_v3_20261022_194045
-  agent_dir: datasets/email3r_runs/rev1_agent_labels_20261022_192927
+  d1_dir: private/runs/rev1_d1_gpt4o_20241120_20261022_192314
+  d2d3_dir: private/runs/rev1_newset_features_d2d3_v3_20261022_194045
+  agent_dir: private/runs/rev1_agent_labels_20261022_192927
   sets:
-    cross_role: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/cross_role_instances.jsonl.gz
-    fresh_holdout: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/fresh_holdout_instances.jsonl.gz
-    e1b: datasets/email3r_runs/rev1_e1b_manager_20261022_194017/e1b_instances.jsonl.gz
+    cross_role: private/runs/rev1_eval_sets_pii06c_20261022_193808/cross_role_instances.jsonl.gz
+    fresh_holdout: private/runs/rev1_eval_sets_pii06c_20261022_193808/fresh_holdout_instances.jsonl.gz
+    e1b: private/runs/rev1_e1b_manager_20261022_194017/e1b_instances.jsonl.gz
 
 analysis:
   sampled_relpath: phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
   published_predictions:             # v1.0 five-seed test predictions (relative to the source run)
-    v1_explicit: phase4_experiments/tide/TIDE_v9_d1v2/predictions.jsonl
-    v1_full: phase4_experiments/tide/TIDE_plm_fusion/predictions.jsonl
-    v1_B11: phase4_experiments/baselines/B11_d2d3_xgb/predictions.jsonl
-    v1_B12: phase4_experiments/ablation/b11b12_20260529_230823/B12_D1_only_xgb_final/predictions.jsonl
+    v1_explicit: v1_experiments/lmeic/LMEIC_v9_d1v2/predictions.jsonl
+    v1_full: v1_experiments/lmeic/LMEIC_plm_fusion/predictions.jsonl
+    v1_B11: v1_experiments/baselines/B11_d2d3_xgb/predictions.jsonl
+    v1_B12: v1_experiments/ablation/b11b12_20260529_230823/B12_D1_only_xgb_final/predictions.jsonl
     # v1.0 main-table baselines (seed 42 only; same thread-disjoint split), for the revised main table
-    v1_B00_majority: phase4_experiments/baselines/B00_majority/predictions.jsonl
-    v1_B01_tfidf_lr: phase4_experiments/baselines/B01_tfidf_lr/predictions.jsonl
-    v1_B02_gpt4o_zs: phase4_experiments/baselines/B02_gpt4o_zs/predictions.jsonl
-    v1_B04_gpt55_zs: phase4_experiments/baselines/B04_gpt55_zs/predictions.jsonl
-    v1_B06_deepseek_v4pro_zs: phase4_experiments/baselines/B06_deepseek_v4pro_zs/predictions.jsonl
-    v1_B07_gpt55_fewshot: phase4_experiments/baselines/B07_gpt55_fewshot/predictions.jsonl
-    v1_B08_gpt55_context_enriched: phase4_experiments/baselines/B08_gpt55_context_enriched/predictions.jsonl
-    v1_B09_xlmr_ft: phase4_experiments/baselines/B09_xlmr_ft/predictions.jsonl
-    v1_B10_xlmr_cls_xgb: phase4_experiments/baselines/B10_xlmr_cls_xgb/predictions.jsonl
+    v1_B00_majority: v1_experiments/baselines/B00_majority/predictions.jsonl
+    v1_B01_tfidf_lr: v1_experiments/baselines/B01_tfidf_lr/predictions.jsonl
+    v1_B02_gpt4o_zs: v1_experiments/baselines/B02_gpt4o_zs/predictions.jsonl
+    v1_B04_gpt55_zs: v1_experiments/baselines/B04_gpt55_zs/predictions.jsonl
+    v1_B06_deepseek_v4pro_zs: v1_experiments/baselines/B06_deepseek_v4pro_zs/predictions.jsonl
+    v1_B07_gpt55_fewshot: v1_experiments/baselines/B07_gpt55_fewshot/predictions.jsonl
+    v1_B08_gpt55_context_enriched: v1_experiments/baselines/B08_gpt55_context_enriched/predictions.jsonl
+    v1_B09_xlmr_ft: v1_experiments/baselines/B09_xlmr_ft/predictions.jsonl
+    v1_B10_xlmr_cls_xgb: v1_experiments/baselines/B10_xlmr_cls_xgb/predictions.jsonl
   extra_predictions:                 # single-seed systems outside this run (relative to repo_root)
-    E11_lora_qwen25_role: datasets/email3r_runs/rev1_e11_llm_baselines_20261023/qwen25_7b_lora_role_s42/test_probs.parquet
-    E11_zs_qwen25_7b: datasets/email3r_runs/rev1_e11_llm_baselines_20261023/zero_shot_email3r_qwen25_7b.jsonl
-    E11_zs_qwen3_8b: datasets/email3r_runs/rev1_e11_llm_baselines_20261023/zero_shot_email3r_qwen3_8b.jsonl
+    E11_lora_qwen25_role: private/runs/rev1_e11_llm_baselines_20261023/qwen25_7b_lora_role_s42/test_probs.parquet
+    E11_zs_qwen25_7b: private/runs/rev1_e11_llm_baselines_20261023/zero_shot_email3r_qwen25_7b.jsonl
+    E11_zs_qwen3_8b: private/runs/rev1_e11_llm_baselines_20261023/zero_shot_email3r_qwen3_8b.jsonl
   comparisons:                       # [a, b]: delta = macro-F1(a) - macro-F1(b)
     - [R3_v3_grouped_full, E11_lora_qwen25_role]
     - [R2_v3_grouped_explicit, E11_lora_qwen25_role]
@@ -198,34 +198,34 @@ variants:
     protocol: grouped_clean
     groups: [d1, d2, d3, text, interactions, role_cond]
     arch: stacking
-    d1_file: datasets/email3r_runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
+    d1_file: private/runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
     params_from: R2_v3_grouped_explicit
   - name: E4_qwen3_8b_full_R3params
     d2d3: v3
     protocol: grouped_clean
     groups: [d1, d2, d3, text, interactions, role_cond, coreader]
     arch: stacking
-    d1_file: datasets/email3r_runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
+    d1_file: private/runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
     params_from: R3_v3_grouped_full
   - name: E4_qwen3_8b_explicit_tuned
     d2d3: v3
     protocol: grouped_clean
     groups: [d1, d2, d3, text, interactions, role_cond]
     arch: stacking
-    d1_file: datasets/email3r_runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
+    d1_file: private/runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
   - name: E4_qwen25_7b_explicit_R2params
     d2d3: v3
     protocol: grouped_clean
     groups: [d1, d2, d3, text, interactions, role_cond]
     arch: stacking
-    d1_file: datasets/email3r_runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
+    d1_file: private/runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
     params_from: R2_v3_grouped_explicit
   - name: E4_qwen25_7b_full_R3params
     d2d3: v3
     protocol: grouped_clean
     groups: [d1, d2, d3, text, interactions, role_cond, coreader]
     arch: stacking
-    d1_file: datasets/email3r_runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
+    d1_file: private/runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
     params_from: R3_v3_grouped_full
   # E6: Qwen3-8B descriptors extracted from strongly masked text (rev1_privacy_mask).
   - name: E6_qwen3_masked_explicit_R2params
@@ -233,14 +233,14 @@ variants:
     protocol: grouped_clean
     groups: [d1, d2, d3, text, interactions, role_cond]
     arch: stacking
-    d1_file: datasets/email3r_runs/rev1_d1_local_qwen3_8b_masked_20261023_004930/d1_all.jsonl
+    d1_file: private/runs/rev1_d1_local_qwen3_8b_masked_20261023_004930/d1_all.jsonl
     params_from: R2_v3_grouped_explicit
   - name: E6_qwen3_masked_full_R3params
     d2d3: v3
     protocol: grouped_clean
     groups: [d1, d2, d3, text, interactions, role_cond, coreader]
     arch: stacking
-    d1_file: datasets/email3r_runs/rev1_d1_local_qwen3_8b_masked_20261023_004930/d1_all.jsonl
+    d1_file: private/runs/rev1_d1_local_qwen3_8b_masked_20261023_004930/d1_all.jsonl
     params_from: R3_v3_grouped_full
   # E13: descriptors from the XLM-R student distilled from the GPT-4o extractor (development
   # rows: out-of-fold student predictions; test rows: student fitted on the development pool).
@@ -249,14 +249,14 @@ variants:
     protocol: grouped_clean
     groups: [d1, d2, d3, text, interactions, role_cond]
     arch: stacking
-    d1_file: datasets/email3r_runs/rev1_e13_distill_20261023_002435/d1_all.jsonl
+    d1_file: private/runs/rev1_e13_distill_20261023_002435/d1_all.jsonl
     params_from: R2_v3_grouped_explicit
   - name: E13_distilled_full_R3params
     d2d3: v3
     protocol: grouped_clean
     groups: [d1, d2, d3, text, interactions, role_cond, coreader]
     arch: stacking
-    d1_file: datasets/email3r_runs/rev1_e13_distill_20261023_002435/d1_all.jsonl
+    d1_file: private/runs/rev1_e13_distill_20261023_002435/d1_all.jsonl
     params_from: R3_v3_grouped_full
   # E9: domain ablation under the grouped protocol with the reference parameters held fixed
   # (same convention as the v1.0 domain ablation). Interactions that involve a removed
@@ -427,7 +427,7 @@ variants:
     groups: [d1, d2, d3, text, interactions, role_cond]
     arch: stacking
     d1_extra:
-      - qwen3=datasets/email3r_runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
+      - qwen3=private/runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
     params_from: R2_v3_grouped_explicit
   - name: E14_qwen25_plus_gpt4o_explicit_R2params
     d2d3: v3
@@ -435,7 +435,7 @@ variants:
     groups: [d1, d2, d3, text, interactions, role_cond]
     arch: stacking
     d1_extra:
-      - qwen25=datasets/email3r_runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
+      - qwen25=private/runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
     params_from: R2_v3_grouped_explicit
   - name: E14_both_extractors_explicit_R2params
     d2d3: v3
@@ -443,8 +443,8 @@ variants:
     groups: [d1, d2, d3, text, interactions, role_cond]
     arch: stacking
     d1_extra:
-      - qwen3=datasets/email3r_runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
-      - qwen25=datasets/email3r_runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
+      - qwen3=private/runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
+      - qwen25=private/runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
     params_from: R2_v3_grouped_explicit
   - name: E14_both_extractors_full_R3params
     d2d3: v3
@@ -452,6 +452,6 @@ variants:
     groups: [d1, d2, d3, text, interactions, role_cond, coreader]
     arch: stacking
     d1_extra:
-      - qwen3=datasets/email3r_runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
-      - qwen25=datasets/email3r_runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
+      - qwen3=private/runs/rev1_d1_local_qwen3_8b_20261022_221637/d1_all.jsonl
+      - qwen25=private/runs/rev1_d1_local_qwen25_7b_20261022_225518/d1_all.jsonl
     params_from: R3_v3_grouped_full

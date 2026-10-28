@@ -21,8 +21,8 @@ from lmeic.human_study.annotation_store.store import Store
 from lmeic.human_study.agreement import LAB
 from lmeic.human_study.supplement import alt_test
 
-RUN = "datasets/email3r_runs/rev1_e1_human_r2_20261025_130349"
-DB = "datasets/email3r_runs/rev1_eval_sets_20261022_161427/human_annotation/web_annotations_r2.sqlite"
+RUN = "private/runs/rev1_e1_human_r2_20261025_130349"
+DB = "private/runs/rev1_eval_sets_20261022_161427/human_annotation/web_annotations_r2.sqlite"
 
 it = pd.read_json(f"{RUN}/items_with_labels.jsonl", lines=True)
 ann = pd.DataFrame([r for r in Store(DB, read_only=True).all_rows() if r["phase"] == "main"])

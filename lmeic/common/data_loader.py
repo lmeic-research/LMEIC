@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_ROOT = REPO_ROOT / "datasets" / "EMAIL-3R" / "v1.0" / "data"
-RUN_ROOT = REPO_ROOT / "datasets" / "email3r_runs" / "run_20260526_123858"
-FEATURE_ROOT = RUN_ROOT / "tide_features"
+RUN_ROOT = REPO_ROOT / "private" / "runs" / "run_20260526_123858"
+FEATURE_ROOT = RUN_ROOT / "lmeic_features"
 SAMPLED_ALL = RUN_ROOT / "phase0_preprocessing" / "06_sampled" / "sampled_all.jsonl.gz"
 
 LABEL_MAP = {"High": 0, "Medium": 1, "Low": 2}
@@ -35,7 +35,7 @@ D1_NUM_COLS = ["urgency_score", "formality_level"]
 D1_BOOL_COLS = ["action_required", "deadline_mentioned"]
 
 # --- D1 v2 (reasoning-augmented, role-aware) schema ---
-FEATURE_ROOT_V2 = RUN_ROOT / "tide_features_v2"
+FEATURE_ROOT_V2 = RUN_ROOT / "lmeic_features_v2"
 D1_V2_CAT_COLS = ["intent_type"]
 D1_V2_NUM_COLS = ["urgency", "time_concreteness", "request_specificity",
                   "consequence_severity", "role_relevance"]

@@ -20,6 +20,7 @@ import ast
 import gzip
 import json
 import logging
+import os
 import sys
 import time
 from pathlib import Path
@@ -34,7 +35,7 @@ from lmeic.common.rev1_common import load_config, release_data_dir, write_json  
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
-V1_RUNNER = _REPO_ROOT / "email3r" / "code" / "experiments" / "baselines" / "run_wave2_llm_zs.py"
+V1_RUNNER = Path(os.environ.get("LMEIC_V1_ZS_RUNNER", str(_REPO_ROOT / "private" / "v1_code" / "run_wave2_llm_zs.py")))
 LABELS = ["High", "Medium", "Low"]
 
 

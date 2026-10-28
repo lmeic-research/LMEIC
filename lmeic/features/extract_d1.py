@@ -23,8 +23,8 @@ D1 v2 redesign:
      to role-relevant content (role_relevance). This is attention focusing, not
      knowledge injection for classification (distinct from the failed OrgCond).
 
-Input:  datasets/email3r_runs/run_20260526_123858/phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
-Output: datasets/email3r_runs/run_20260526_123858/tide_features_v2/d1_features_v2.jsonl
+Input:  private/runs/run_20260526_123858/phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
+Output: private/runs/run_20260526_123858/lmeic_features_v2/d1_features_v2.jsonl
 """
 
 from __future__ import annotations
@@ -46,9 +46,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-RUN_DIR = REPO_ROOT / "datasets/email3r_runs/run_20260526_123858"
+RUN_DIR = REPO_ROOT / "private/runs/run_20260526_123858"
 INPUT_PATH = RUN_DIR / "phase0_preprocessing/06_sampled/sampled_all.jsonl.gz"
-OUTPUT_DIR = RUN_DIR / "tide_features_v2"
+OUTPUT_DIR = RUN_DIR / "lmeic_features_v2"
 OUTPUT_PATH = OUTPUT_DIR / "d1_features_v2.jsonl"
 
 SCI_ENV = Path(__file__).resolve().parents[2] / ".env"

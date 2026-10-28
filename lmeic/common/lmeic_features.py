@@ -18,8 +18,8 @@ Architecture (identical to v6, the 0.7611 baseline):
   + interaction & role-conditional features.
 
 Usage:
-  python run_tide_v9.py v1   # old D1 + corrected D2/D3 (isolates leakage fix)
-  python run_tide_v9.py v2   # new D1 v2 + corrected D2/D3 (full new pipeline)
+  python -m lmeic.common.lmeic_features v1   # old D1 + corrected D2/D3 (isolates leakage fix)
+  python -m lmeic.common.lmeic_features v2   # new D1 v2 + corrected D2/D3 (full new pipeline)
 """
 import json
 import logging
@@ -56,8 +56,8 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-OUTPUT_ROOT = (REPO_ROOT / "datasets" / "email3r_runs" / "run_20260526_123858"
-               / "phase4_experiments" / "tide")
+OUTPUT_ROOT = (REPO_ROOT / "private" / "runs" / "run_20260526_123858"
+               / "v1_experiments" / "lmeic")
 SEEDS = [42, 123, 456, 789, 2026]
 N_TRIALS = 60
 
@@ -289,7 +289,7 @@ def run(d1_version: str):
     agg["n_test"] = len(y_test)
     agg["cost"] = {"usd_total": 0, "ms_per_sample": round(elapsed * 1000 / len(y_test) / len(SEEDS), 1)}
     config = {
-        "experiment_id": f"TIDE_v9_d1{d1_version}",
+        "experiment_id": f"LMEIC_v9_d1{d1_version}",
         "experiment_name": f"LMEIC v9 (D1 {d1_version} + leakage-corrected D2/D3)",
         "d1_version": d1_version,
         "d2d3_version": "v2_leakage_corrected",
@@ -299,7 +299,7 @@ def run(d1_version: str):
         "best_xgb_params": best_xgb, "best_lgbm_params": best_lgbm,
         "random_seeds": SEEDS, "elapsed_s": round(elapsed, 1),
     }
-    out_dir = OUTPUT_ROOT / f"TIDE_v9_d1{d1_version}"
+    out_dir = OUTPUT_ROOT / f"LMEIC_v9_d1{d1_version}"
     save_results(out_dir, config["experiment_id"], config["experiment_name"], config, agg, all_preds)
 
     mean_f1, std_f1 = agg["overall"]["macro_f1"]["mean"], agg["overall"]["macro_f1"]["std"]

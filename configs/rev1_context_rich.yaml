@@ -10,9 +10,9 @@ sampled_relpath: phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
 output_prefix: rev1_context_rich
 
 external_sets:
-  cross_role: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/cross_role_instances.jsonl.gz
-  fresh_holdout: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/fresh_holdout_instances.jsonl.gz
-  e1b: datasets/email3r_runs/rev1_e1b_manager_20261022_194017/e1b_instances.jsonl.gz
+  cross_role: private/runs/rev1_eval_sets_pii06c_20261022_193808/cross_role_instances.jsonl.gz
+  fresh_holdout: private/runs/rev1_eval_sets_pii06c_20261022_193808/fresh_holdout_instances.jsonl.gz
+  e1b: private/runs/rev1_e1b_manager_20261022_194017/e1b_instances.jsonl.gz
 
 history:
   load_windows_hours: [24, 168]
@@ -33,7 +33,7 @@ semantic:
   max_len: 512
   batch_size: 64
   thread_history_max: 5
-  role_description_source: email3r/code/annotation/prompts/system_prompts.py
+  role_description_source: lmeic/labelling/system_prompts.py
 
 mined_ngrams:                 # cross-fitted on thread-grouped development folds
   fold_seed: 42

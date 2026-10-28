@@ -61,10 +61,10 @@ logger = logging.getLogger("e1")
 LABELS = ["High", "Medium", "Low"]
 LAB = {l: i for i, l in enumerate(LABELS)}
 ORD = {"Low": 0, "Medium": 1, "High": 2}
-EVAL = "datasets/email3r_runs/rev1_eval_sets_20261022_161427"
-V1_VOTES = "datasets/email3r_runs/run_20260526_123858/phase1_annotation/annotations_full.jsonl"
-AGENT_DIR = "datasets/email3r_runs/rev1_agent_labels_20261022_192927"
-REF = "datasets/email3r_runs/rev1_reference_20261022_191130"
+EVAL = "private/runs/rev1_eval_sets_20261022_161427"
+V1_VOTES = "private/runs/run_20260526_123858/phase1_annotation/annotations_full.jsonl"
+AGENT_DIR = "private/runs/rev1_agent_labels_20261022_192927"
+REF = "private/runs/rev1_reference_20261022_191130"
 N_BOOT = 2000
 BOOT_SEED = 20261024
 EQUIV_MARGIN = 0.10
@@ -74,7 +74,7 @@ EQUIV_MARGIN = 0.10
 SYSTEMS = {
     "R2_explicit": ("ext", f"{REF}/R2_v3_grouped_explicit/external_20261022_211532/external_predictions_all_seeds.parquet"),
     "R3_full": ("ext", f"{REF}/R3_v3_grouped_full/external_20261022_225607/external_predictions_all_seeds.parquet"),
-    "E11_lora_qwen25_role": ("ext", "datasets/email3r_runs/rev1_e11_lora_role_external_20261023/qwen25_7b_lora_role_s42/external_predictions.parquet"),
+    "E11_lora_qwen25_role": ("ext", "private/runs/rev1_e11_lora_role_external_20261023/qwen25_7b_lora_role_s42/external_predictions.parquet"),
     "E14_both_explicit": ("test", f"{REF}/E14_both_extractors_explicit_R2params/test_predictions_all_seeds.parquet"),
     "E14_both_full": ("test", f"{REF}/E14_both_extractors_full_R3params/test_predictions_all_seeds.parquet"),
     "E9_explicit_d1_only": ("test", f"{REF}/E9_explicit_d1_only/test_predictions_all_seeds.parquet"),

@@ -3,7 +3,7 @@ Model fitting for the reference rebuild: Optuna tuning, XGB+LGBM stacking and si
 Version: v1 | Date: 2026-10-22
 
 Search spaces, base learners and the logistic-regression meta-learner follow the
-EMAIL-3R v1.0 implementation (run_tide_v9.optuna_search, run_ablation.run_stacking).
+EMAIL-3R v1.0 implementation (Optuna search and stacking of the original pipeline).
 The only protocol differences are the fold construction and, under grouped_clean,
 LightGBM early stopping on an inner thread-disjoint split instead of the scored fold.
 """

@@ -10,7 +10,7 @@ of R3 and R2 against every main-text baseline the Holm-adjusted p within each fa
 
 Usage:
   python -m lmeic.reference.main_table \
-      --run-dir datasets/email3r_runs/rev1_reference_20261022_191130 --analysis analysis_20261027_100042
+      --run-dir private/runs/rev1_reference_20261022_191130 --analysis analysis_20261027_100042
 """
 
 from __future__ import annotations

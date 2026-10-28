@@ -47,6 +47,8 @@ from benchmarks.jira.run_baselines import (  # noqa: E402
 )
 from lmeic.common.rev1_common import git_commit, write_json  # noqa: E402
 
+from benchmarks.jira.sample_ids import DEFAULT_SAMPLE_IDS, read_sample_ids  # noqa: E402
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
@@ -116,7 +118,7 @@ def paired_boot(y, pa, pb, k, n=2000, seed=20261024):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--processed", default="datasets/public/apache_jira/processed")
-    ap.add_argument("--sample-ids", default="sample_30000_issue_ids.txt")
+    ap.add_argument("--sample-ids", default=DEFAULT_SAMPLE_IDS)
     ap.add_argument("--d1", required=True)
     ap.add_argument("--out", default=None)
     ap.add_argument("--setting", choices=["S1", "S2"], default="S1")
@@ -126,7 +128,7 @@ def main() -> None:
     df = load(proc)
     df = df.join(history_features(df))
     df["issue_id"] = df["issue_id"].astype(str)
-    ids = [l.strip() for l in (proc / args.sample_ids).read_text().splitlines() if l.strip()]
+    ids = read_sample_ids(proc, args.sample_ids)
     df = df.set_index("issue_id").loc[ids].reset_index()
     d1 = d1_frame(Path(args.d1))
     n_before = len(df)

@@ -6,7 +6,7 @@
 source_run_id: run_20260526_123858
 history_relpath: phase0_preprocessing/05_redacted/with_threads.jsonl.gz
 sampled_relpath: phase0_preprocessing/06_sampled/sampled_all.jsonl.gz
-v2_features_relpath: tide_features_v2/d2d3_features_v2.parquet
+v2_features_relpath: lmeic_features_v2/d2d3_features_v2.parquet
 partner_identifiers: configs/private/partner_identifiers.yaml
 output_prefix: rev1_features_d2d3_v3
 

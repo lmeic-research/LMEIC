@@ -28,7 +28,7 @@ and applied once to test; nothing is tuned on test.
 
 Usage:
   python -m lmeic.analysis.e15_role_thresholds \
-      --run-dir datasets/email3r_runs/rev1_reference_20261022_191130 \
+      --run-dir private/runs/rev1_reference_20261022_191130 \
       --variant R3_v3_grouped_full
 """
 

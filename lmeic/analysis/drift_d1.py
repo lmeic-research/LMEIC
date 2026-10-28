@@ -101,7 +101,7 @@ def downstream(new: pd.DataFrame, out_dir: Path, n_boot: int = 2000) -> dict:
     assert (meta["test"]["message_id"].values == metab["test"]["message_id"].values).all()
     changed_rows = int((np.abs(Xt_a - Xt_b).sum(1) > 0).sum())
 
-    v1 = json.loads((run_dir / cfg["v1_artefacts"]["tide_v9_config"]).read_text())
+    v1 = json.loads((run_dir / cfg["v1_artefacts"]["v1_config"]).read_text())
     params = {"xgb": v1["best_xgb_params"], "lgbm": v1["best_lgbm_params"]}
     res = M.stacking(Xa, yy, g, np.vstack([Xt_a, Xt_b]), params, "v1_original", cfg["seeds"],
                      cfg["n_folds"], cfg["inner_es_fraction"])

@@ -1,6 +1,6 @@
 # E4: open-weight D1 extractors served locally with vLLM (no external API).
 # Prompt, one-shot example and field schema are imported unchanged from
-# email3r/code/framework/features/extract_d1_v2.py; decoding is constrained to the
+# the v1.0 extractor (extract_d1_v2.py); decoding is constrained to the
 # field schema.
 
 source_run_id: run_20260526_123858

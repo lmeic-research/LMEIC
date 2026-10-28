@@ -26,7 +26,7 @@ from lmeic.common.data_loader import (  # noqa: E402
     _load_positional_message_ids, encode_d1_v2, get_d2d3_feature_cols,
     load_d1_features_v2, load_d2d3_features_v2, load_splits, prepare_feature_matrix,
 )
-from lmeic.common.tide_features import build_interactions, build_text_features  # noqa: E402
+from lmeic.common.lmeic_features import build_interactions, build_text_features  # noqa: E402
 
 SPLIT_NAMES = ["train", "val", "test"]
 PROB_COLS = ["plm_p_high", "plm_p_med", "plm_p_low"]

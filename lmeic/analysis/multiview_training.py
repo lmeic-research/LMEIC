@@ -60,7 +60,7 @@ logger = logging.getLogger("e17")
 
 P3 = ["p_high", "p_med", "p_low"]
 IMPORTANCE = np.array([2.0, 1.0, 0.0])   # High, Medium, Low (LABEL_MAP order)
-REF = "datasets/email3r_runs/rev1_reference_20261022_191130"
+REF = "private/runs/rev1_reference_20261022_191130"
 VARIANT = "R2_v3_grouped_explicit"
 CONTROL_EXT = f"{REF}/{VARIANT}/external_20261022_211532/external_predictions_all_seeds.parquet"
 N_OUTER = 5

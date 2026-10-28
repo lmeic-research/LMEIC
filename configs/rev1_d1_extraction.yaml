@@ -1,6 +1,6 @@
 # D1 (LLM descriptor) extraction for revision 1.
 # Prompt, one-shot example and field schema are imported unchanged from
-# email3r/code/framework/features/extract_d1_v2.py; only the endpoint and the
+# the v1.0 extractor (extract_d1_v2.py); only the endpoint and the
 # pinned model snapshot differ (DJ D044).
 
 source_run_id: run_20260526_123858
@@ -54,20 +54,20 @@ sets:
     subset_seed: 20261022
   cross_role:
     kind: jsonl
-    path: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/cross_role_instances.jsonl.gz
+    path: private/runs/rev1_eval_sets_pii06c_20261022_193808/cross_role_instances.jsonl.gz
     id_field: instance_id
   fresh_holdout:
     kind: jsonl
-    path: datasets/email3r_runs/rev1_eval_sets_pii06c_20261022_193808/fresh_holdout_instances.jsonl.gz
+    path: private/runs/rev1_eval_sets_pii06c_20261022_193808/fresh_holdout_instances.jsonl.gz
     id_field: instance_id
   e1b:
     kind: jsonl
-    path: datasets/email3r_runs/rev1_e1b_manager_20261022_194017/e1b_instances.jsonl.gz
+    path: private/runs/rev1_e1b_manager_20261022_194017/e1b_instances.jsonl.gz
     id_field: instance_id
   e12_enron:                         # run through e12_enron.run_api (Enron role descriptions)
     kind: jsonl
-    path: datasets/email3r_runs/rev1_e12_enron_20261022_235509/instances.jsonl.gz
+    path: private/runs/rev1_e12_enron_20261022_235509/instances.jsonl.gz
     id_field: instance_id
 
 drift:
-  v1_d1_relpath: tide_features_v2/d1_features_v2.jsonl
+  v1_d1_relpath: lmeic_features_v2/d1_features_v2.jsonl

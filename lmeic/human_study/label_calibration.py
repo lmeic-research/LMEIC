@@ -1,7 +1,6 @@
 """E19: can a few human labels correct the systematic gap between agent-trained models and humans?
 
-Experiment card: 20260617-IJMLC-submission/20261021第一次大修/04_补充实验记录/E19_E20_实验卡_20261026.md
-(written before the run). Only the output layer is adjusted; no model is retrained.
+Design (written before the run, experiment E19). Only the output layer is adjusted; no model is retrained.
 
   C0  no correction (reference)
   C1  class-prior shift: per-class log offset fitted on calibration folds (3 parameters)
@@ -159,7 +158,7 @@ def main() -> None:
     sec = [c for c in comps if not c["primary"]]
     for c, p in zip(sec, holm(np.array([c["p_two_sided"] for c in sec]))):
         c["p_holm"] = float(p)
-    res = {"card": "04_补充实验记录/E19_E20_实验卡_20261026.md", "n_items": len(y), "n_threads": len(uniq),
+    res = {"experiment": "E19", "n_items": len(y), "n_threads": len(uniq),
            "folds": "StratifiedGroupKFold(5) by thread, seed 20261026", "rows": rows, "comparisons": comps,
            "learning_curve_C2": curve, "git_commit": git_commit(_REPO_ROOT)}
     write_json(out / "summary.json", res)

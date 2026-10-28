@@ -93,8 +93,8 @@ def run_variant(v: dict, cfg: dict, paths: dict, out_dir: Path) -> dict:
         assert check_group_disjoint(make_folds(yy, g, "grouped_clean", 42, cfg["n_folds"]), g) == 0
 
     if v.get("reuse_v1_params"):
-        v1 = json.loads((run_dir / cfg["v1_artefacts"]["tide_v9_config"]).read_text())
-        params = {"xgb": v1["best_xgb_params"], "lgbm": v1["best_lgbm_params"], "source": "v1.0 TIDE_v9_d1v2"}
+        v1 = json.loads((run_dir / cfg["v1_artefacts"]["v1_config"]).read_text())
+        params = {"xgb": v1["best_xgb_params"], "lgbm": v1["best_lgbm_params"], "source": "v1.0 LMEIC_v9_d1v2"}
     elif v.get("params_from"):
         params = json.loads((out_dir / v["params_from"] / "params.json").read_text())
         params["source"] = v["params_from"]

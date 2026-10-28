@@ -16,7 +16,12 @@ owners of two or more roles) form the role-sensitivity test set; every other ins
 thread-disjointly into development and test.
 
 Usage:
-  python -m benchmarks.enron.build_instances
+  python -m benchmarks.enron.build_instances [--out-dir runs/enron] [--check data/enron/instances.jsonl.gz]
+
+Without --out-dir the output goes to a new timestamped directory under runs/ (see configs/paths.yaml).
+--check compares the rebuilt instances with the shipped (text-free) instance list after writing them:
+instance_id, email_key, owner, role, date, split and the hashed thread id (first 16 hex digits of the
+SHA-1 of the thread key) must all agree.
 """
 
 from __future__ import annotations
@@ -124,9 +129,25 @@ def sample_role(c: pd.DataFrame, n: int, min_owner: int, rng: np.random.Generato
     return pd.concat(parts) if parts else c.iloc[:0]
 
 
+def check_against_shipped(recs: list[dict], shipped: Path) -> bool:
+    """Compare rebuilt instances with the shipped instance list (which carries no text)."""
+    new = pd.DataFrame(recs)
+    new["thread_id"] = new["thread_id"].map(lambda t: hashlib.sha1(str(t).encode("utf-8")).hexdigest()[:16])
+    old = pd.read_json(shipped, lines=True, dtype={"instance_id": str})
+    cols = ["instance_id", "email_key", "owner", "role", "owner_status", "date_utc", "thread_id", "thread_depth",
+            "to_addrs_count", "cc_addrs_count", "target_user_position", "has_attachment", "cross_role", "split"]
+    ok = len(old) == len(new) and all((old[c].astype(str).values == new[c].astype(str).values).all() for c in cols)
+    logger.info("check against %s: %s (%d rebuilt vs %d shipped rows)", shipped, "IDENTICAL" if ok else "DIFFERENT",
+                len(new), len(old))
+    return ok
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out-dir", default=None)
+    ap.add_argument("--out-dir", default=None,
+                    help="output directory (default: new timestamped directory under runs/)")
+    ap.add_argument("--check", default=None, metavar="SHIPPED_INSTANCES",
+                    help="compare the rebuilt instances with the shipped data/enron/instances.jsonl.gz")
     args = ap.parse_args()
     paths, cfg = load_config(CONFIG_NAME)
     repo = Path(paths["repo_root"])
@@ -205,6 +226,8 @@ def main() -> None:
         "n_threads": {"dev": int(inst.loc[inst["split"] == "dev", "thread_id"].nunique()),
                       "test": int(inst.loc[inst["split"] == "test", "thread_id"].nunique())}})
     logger.info("instances %d -> %s\n%s", len(inst), out_dir, tab.to_string(index=False))
+    if args.check and not check_against_shipped(recs, Path(args.check)):
+        sys.exit(1)
 
 
 if __name__ == "__main__":

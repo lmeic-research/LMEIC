@@ -43,7 +43,7 @@ from lmeic.reference import models as M  # noqa: E402
 from lmeic.reference.analyse_reference import macro  # noqa: E402
 from lmeic.common.rev1_common import git_commit, load_config, read_jsonl, write_json  # noqa: E402
 from lmeic.common.data_loader import load_d1_features_v2  # noqa: E402
-from lmeic.common.tide_features import build_interactions  # noqa: E402
+from lmeic.common.lmeic_features import build_interactions  # noqa: E402
 from lmeic.features.d1_prompt_variants import VARIANTS  # noqa: E402
 from lmeic.features.extract_d1 import BOOL_FIELDS, NUMERIC_FIELDS, coerce  # noqa: E402
 

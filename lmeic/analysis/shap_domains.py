@@ -28,7 +28,7 @@ from lmeic.common.rev1_common import git_commit, load_config, write_json
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("shap_v3")
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-REF = _REPO_ROOT / "datasets/email3r_runs/rev1_reference_20261022_191130"
+REF = _REPO_ROOT / "private/runs/rev1_reference_20261022_191130"
 
 
 def domain_of(c: str) -> str:
@@ -71,7 +71,7 @@ def main() -> None:
            "n_features": len(cols), "domain_attribution_pct": (dom / dom.sum() * 100).round(2).to_dict(),
            "n_features_by_domain": imp["domain"].value_counts().to_dict(), "per_role_domain_attribution_pct": per_role,
            "top20": imp.sort_values("mean_abs_shap", ascending=False).head(20)[["feature", "domain", "mean_abs_shap"]]
-           .round(4).to_dict("records"), "v1_reference": "phase4_experiments/analysis/shap_20260530_093412",
+           .round(4).to_dict("records"), "v1_reference": "v1_experiments/analysis/shap_20260530_093412",
            "git_commit": git_commit(_REPO_ROOT)}
     write_json(out / "summary.json", res)
     print(json.dumps({k: res[k] for k in ("domain_attribution_pct", "n_features_by_domain", "per_role_domain_attribution_pct")}, indent=1))

@@ -14,7 +14,7 @@ annotation database); it is included to document the analysis and does not run w
 import sys; sys.path.insert(0,'.')
 import pandas as pd, numpy as np, json
 from lmeic.human_study.agreement import SYSTEMS, load_system, macro_f1, LAB, _REPO_ROOT
-it=pd.read_json("datasets/email3r_runs/rev1_e1_human_r2_20261025_130349/items_with_labels.jsonl", lines=True)
+it=pd.read_json("private/runs/rev1_e1_human_r2_20261025_130349/items_with_labels.jsonl", lines=True)
 it["pred_id"]=it.pred_id.astype(str)
 d=it[it.human_majority.notna()].reset_index(drop=True)
 y=d.human_majority.map(LAB).to_numpy()
@@ -34,4 +34,4 @@ for src in ["core_test","fresh_holdout","cross_role","all","no_overlap"]:
             dd=np.array([macro_f1(yy[b],pr[x][b])-macro_f1(yy[b],pr[z][b]) for b in B]); obs=macro_f1(yy,pr[x])-macro_f1(yy,pr[z])
             r=dict(source=src,n=len(idx),a=x,b=z,diff_pp=round(obs*100,2),lo=round(np.percentile(dd,2.5)*100,2),hi=round(np.percentile(dd,97.5)*100,2),p=round(2*min((dd<=0).mean(),(dd>=0).mean()),3))
             out.append(r); print(r)
-pd.DataFrame(out).to_csv("datasets/email3r_runs/rev1_e1_human_r2_20261025_130349/e1b_supplement/paired_vs_human.csv",index=False)
+pd.DataFrame(out).to_csv("private/runs/rev1_e1_human_r2_20261025_130349/e1b_supplement/paired_vs_human.csv",index=False)

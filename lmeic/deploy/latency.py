@@ -72,7 +72,7 @@ def time_text(n: int) -> dict:
     from sklearn.decomposition import TruncatedSVD
     from sklearn.feature_extraction.text import TfidfVectorizer
     tr, te = load_split("train"), load_split("test")
-    # vectoriser settings must match run_tide_v9.build_text_features
+    # vectoriser settings must match lmeic_features.build_text_features
     wv = TfidfVectorizer(max_features=20000, ngram_range=(1, 2), sublinear_tf=True, min_df=3, max_df=0.9)
     ws = TruncatedSVD(40, random_state=42).fit(wv.fit_transform(tr["latest_text"].fillna("")))
     cv = TfidfVectorizer(max_features=30000, ngram_range=(2, 4), sublinear_tf=True, min_df=5, max_df=0.9, analyzer="char_wb")

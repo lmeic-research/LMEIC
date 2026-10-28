@@ -80,7 +80,7 @@ def main() -> None:
                                       "PI": pi, "II": ii, "ci95": ci, "n_columns": {k: len(v) for k, v in cols.items()},
                                       "folds": "StratifiedGroupKFold(5) by thread, seed 42",
                                       "estimator": "HistGradientBoosting(max_depth=4, max_iter=200, lr=0.08, l2=1.0)",
-                                      "v1_reference": "phase4_experiments/analysis/info_decomp_20260529_184337",
+                                      "v1_reference": "v1_experiments/analysis/info_decomp_20260529_184337",
                                       "git_commit": git_commit(_REPO_ROOT)})
     for k, v in {**pi, **ii}.items():
         print(f"{k:14s} {v:+.4f}  [{ci[k][0]:+.4f}, {ci[k][1]:+.4f}]")
