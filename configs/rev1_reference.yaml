@@ -168,6 +168,11 @@ analysis:
     E21_full_no_role_5cr: {kind: variant_glob, glob: "E21_full_no_role_cr*", min_groups: 5}
     E22_lora_5seed: {kind: probs_glob, root: private/runs/rev1_e22_lora_multiseed_20261028_102628, glob: "qwen25_7b_lora_role_s*/test_probs.parquet", min_groups: 5}
     E21_xlmr_5seed: {kind: probs_glob, root: private/runs/rev1_reference_20261022_191130/coreader_bank, glob: "xlmr_base_fp32_s*/probs.parquet", min_groups: 5}
+    # E28 (2026-10-29)
+    E28_full_loratext_5cr: {kind: variant_glob, glob: "E28_full_loratext_s*", min_groups: 5}
+    E28_full_xlmrl_5cr: {kind: variant_glob, glob: "E28_full_xlmrl_s*", min_groups: 5}
+    E28_loratext_5seed: {kind: probs_glob, root: private/runs/rev1_reference_20261022_191130/coreader_bank, glob: "qwen25_7b_lora_text_s*/probs.parquet", min_groups: 5}
+    E28_xlmrl_5seed: {kind: probs_glob, root: private/runs/rev1_reference_20261022_191130/coreader_bank, glob: "xlmr_large_s*/probs.parquet", min_groups: 5}
   pooled_comparisons:
     - [E21_full_5cr, v1_B00_majority]
     - [E21_full_5cr, v1_B01_tfidf_lr]
@@ -194,6 +199,17 @@ analysis:
     - [R2_v3_grouped_explicit, E23_explicit_no_role]
     - [E21_full_5cr, R3_v3_grouped_full]
     - [E22_lora_5seed, E11_lora_qwen25_role]
+    # E28 (2026-10-29): primary family (Holm over these two) then descriptive comparisons
+    - [E28_full_loratext_5cr, E22_lora_5seed]
+    - [E28_full_xlmrl_5cr, E22_lora_5seed]
+    - [E28_full_loratext_5cr, E21_full_5cr]
+    - [E28_full_xlmrl_5cr, E21_full_5cr]
+    - [E28_full_loratext_5cr, E28_loratext_5seed]
+    - [E28_full_xlmrl_5cr, E28_xlmrl_5seed]
+    - [E28_loratext_5seed, E22_lora_5seed]
+    # added 2026-10-30 after the run for the co-reader bank table (relative to LMEIC-explicit, descriptive)
+    - [E28_full_xlmrl_5cr, R2_v3_grouped_explicit]
+    - [E28_full_loratext_5cr, R2_v3_grouped_explicit]
 
 variants:
   - name: R0_v2_original_storedparams
@@ -538,5 +554,14 @@ variants:
     d2d3: v3
     protocol: grouped_clean
     groups: [d1, d2, d3, text, interactions, role_cond]
+    arch: stacking
+    params_from: R3_v3_grouped_full
+  # E28 (2026-10-29): LMEIC-full with stronger co-readers (Qwen2.5-7B LoRA text-only, selected by development
+  # OOF; XLM-R large as sensitivity), run once per co-reader seed with run_reference --only E28_full
+  # --coreader-dir <coreader_bank/<candidate>_s<seed>> --suffix _<tag>_s<seed>; R3 parameters, same groups as E21_full.
+  - name: E28_full
+    d2d3: v3
+    protocol: grouped_clean
+    groups: [d1, d2, d3, text, interactions, role_cond, coreader]
     arch: stacking
     params_from: R3_v3_grouped_full

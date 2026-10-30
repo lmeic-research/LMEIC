@@ -145,8 +145,14 @@ python -m lmeic.reference.main_table --run-dir <run dir> --analysis <analysis di
 - **Jira column orders.** XGBoost column subsampling depends on the column order, so the identity ablation repeats every arm
   under five orders: `python -m benchmarks.jira.run_id_ablation --d1 data/jira/d1_qwen25_7b.jsonl --n-orders 5 --device cpu`.
   Use `--device cpu` (the default): the GPU build of XGBoost gives different and much worse fits on these sparse inputs.
+- **Larger co-readers (E28).** `python -m lmeic.analysis.coreader_bank --out-dir <run dir> --candidates xlmr_large --seeds <s>`
+  and `python -m lmeic.baselines.lora_classifier --out-root <run dir>/coreader_bank --input text --mode oof --seed <s>`
+  give cross-fitted co-readers; `python -m lmeic.reference.run_reference --out-dir <run dir> --only E28_full
+  --coreader-dir <run dir>/coreader_bank/<candidate>_s<s> --suffix _<tag>_s<s>` fits LMEIC-full on each, and the runs are
+  pooled as `E28_full_xlmrl_5cr` and `E28_full_loratext_5cr`; `lmeic.reference.class_f1` writes per-class F1 and SDs.
+- **Context gain by amount of history (E29a).** `python -m lmeic.analysis.context_dose --run-dir <run dir> --pair full|explicit`.
 - `lmeic.deploy.latency_d1_local` times single-email local D1 extraction on an idle GPU;
-  `lmeic.human_study.confusion_census` and `lmeic.human_study.crossrole_multiseed` need the unreleased human-annotation data.
+  `lmeic.human_study.confusion_census`, `lmeic.human_study.crossrole_multiseed` and `lmeic.human_study.unanimous_rescoring` (E29b) need the unreleased human-annotation data.
 
 ## Citation
 
